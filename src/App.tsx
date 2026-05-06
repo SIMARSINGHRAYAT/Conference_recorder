@@ -8,6 +8,7 @@ type ConferenceEntry = {
   publicationDate: string;
   expectedPublicationMonth: string;
   conferenceCategory: string;
+  papersSubmitted: number | "";
 };
 
 type ConferenceForm = Omit<ConferenceEntry, "id">;
@@ -19,6 +20,7 @@ const emptyForm: ConferenceForm = {
   publicationDate: "",
   expectedPublicationMonth: "",
   conferenceCategory: "IEEE",
+  papersSubmitted: "",
 };
 
 const statuses = ["Accepted", "Presented"];
@@ -42,6 +44,14 @@ export default function App() {
     }
 
     return Math.max(...entries.map((entry) => entry.id)) + 1;
+  }, [entries]);
+
+  const sortedEntries = useMemo(() => {
+    return [...entries].sort((a, b) => {
+      if (!a.conferenceDate) return 1;
+      if (!b.conferenceDate) return -1;
+      return new Date(a.conferenceDate).getTime() - new Date(b.conferenceDate).getTime();
+    });
   }, [entries]);
 
   const submitEntry = (event: FormEvent<HTMLFormElement>) => {
@@ -100,78 +110,81 @@ export default function App() {
     return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   };
 
-  const statusClassName = (status: string) => {
+  const statusClassName = (status: string, publicationDate: string) => {
     if (status === "Presented") {
-      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
+      if (publicationDate) {
+        return "bg-green-900 text-white ring-1 ring-green-700";
+      }
+      return "bg-green-500 text-white ring-1 ring-green-400";
     }
 
-    return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
+    return "bg-amber-100 text-black ring-1 ring-amber-200";
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-8">
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-8 font-['Comic_Sans_MS',_Comic_Sans,_cursive]">
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 backdrop-blur-sm">
+        <header className="rounded-2xl border border-white/20 bg-black p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Publication Tracker</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Conference Publication Dashboard</h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-300">
+          <p className="mt-2 max-w-2xl text-sm text-gray-300">
             Add your conference papers, track acceptance and presentations, and monitor category-wise publication counts.
           </p>
         </header>
 
-        <section className="grid gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-4 sm:grid-cols-2 lg:grid-cols-5">
+        <section className="grid gap-4 rounded-2xl border border-white/20 bg-black p-4 sm:grid-cols-2 lg:grid-cols-5">
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-400">Total Papers</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Total Papers</p>
             <p className="mt-1 text-3xl font-semibold text-white">{counts.total}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-400">IEEE</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">IEEE</p>
             <p className="mt-1 text-2xl font-semibold text-cyan-300">{counts.ieee}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-400">Springers</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Springers</p>
             <p className="mt-1 text-2xl font-semibold text-violet-300">{counts.springers}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-400">CRC</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">CRC</p>
             <p className="mt-1 text-2xl font-semibold text-fuchsia-300">{counts.crc}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-400">Other</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-200">{counts.other}</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Other</p>
+            <p className="mt-1 text-2xl font-semibold text-gray-200">{counts.other}</p>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-sm sm:p-6">
+        <section className="rounded-2xl border border-white/20 bg-black p-4 shadow-sm sm:p-6">
           <form onSubmit={submitEntry} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <label className="space-y-1">
-              <span className="text-sm font-medium text-slate-200">Conference Name</span>
+              <span className="text-sm font-medium text-gray-200">Conference Name</span>
               <input
                 required
                 value={form.conferenceName}
                 onChange={(event) => setForm((previous) => ({ ...previous, conferenceName: event.target.value }))}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-400"
+                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
                 placeholder="e.g. ICML 2027"
               />
             </label>
 
             <label className="space-y-1">
-              <span className="text-sm font-medium text-slate-200">Conference Date</span>
+              <span className="text-sm font-medium text-gray-200">Conference Date</span>
               <input
                 required
                 type="date"
                 value={form.conferenceDate}
                 onChange={(event) => setForm((previous) => ({ ...previous, conferenceDate: event.target.value }))}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-400"
+                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
               />
             </label>
 
             <label className="space-y-1">
-              <span className="text-sm font-medium text-slate-200">Status</span>
+              <span className="text-sm font-medium text-gray-200">Status</span>
               <select
                 value={form.status}
                 onChange={(event) => setForm((previous) => ({ ...previous, status: event.target.value }))}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-400"
+                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
               >
                 {statuses.map((status) => (
                   <option key={status} value={status}>
@@ -182,17 +195,34 @@ export default function App() {
             </label>
 
             <label className="space-y-1">
-              <span className="text-sm font-medium text-slate-200">Publication Date</span>
+              <span className="text-sm font-medium text-gray-200">Papers Submitted</span>
               <input
-                type="date"
-                value={form.publicationDate}
-                onChange={(event) => setForm((previous) => ({ ...previous, publicationDate: event.target.value }))}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-400"
+                type="number"
+                min="0"
+                value={form.papersSubmitted}
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    papersSubmitted: event.target.value ? Number(event.target.value) : "",
+                  }))
+                }
+                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                placeholder="e.g. 1"
               />
             </label>
 
             <label className="space-y-1">
-              <span className="text-sm font-medium text-slate-200">Expected Publication Month</span>
+              <span className="text-sm font-medium text-gray-200">Publication Date</span>
+              <input
+                type="date"
+                value={form.publicationDate}
+                onChange={(event) => setForm((previous) => ({ ...previous, publicationDate: event.target.value }))}
+                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+              />
+            </label>
+
+            <label className="space-y-1">
+              <span className="text-sm font-medium text-gray-200">Expected Publication Month</span>
               <input
                 type="month"
                 value={form.expectedPublicationMonth}
@@ -202,16 +232,16 @@ export default function App() {
                     expectedPublicationMonth: event.target.value,
                   }))
                 }
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-400"
+                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
               />
             </label>
 
             <label className="space-y-1">
-              <span className="text-sm font-medium text-slate-200">Conference Category</span>
+              <span className="text-sm font-medium text-gray-200">Conference Category</span>
               <select
                 value={form.conferenceCategory}
                 onChange={(event) => setForm((previous) => ({ ...previous, conferenceCategory: event.target.value }))}
-                className="w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none transition focus:border-cyan-400"
+                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
               >
                 {categories.map((category) => (
                   <option key={category} value={category}>
@@ -224,7 +254,7 @@ export default function App() {
             <div className="flex items-end gap-2">
               <button
                 type="submit"
-                className="w-full rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+                className="w-full rounded-md bg-cyan-700 hover:bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition"
               >
                 {editingId !== null ? "Update Entry" : "Add Entry"}
               </button>
@@ -235,7 +265,7 @@ export default function App() {
                     setEditingId(null);
                     setForm(emptyForm);
                   }}
-                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+                  className="w-full rounded-md border border-white/60 bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
                 >
                   Cancel
                 </button>
@@ -244,13 +274,14 @@ export default function App() {
           </form>
         </section>
 
-        <section className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/70 shadow-sm">
+        <section className="overflow-x-auto rounded-2xl border border-white/20 bg-black shadow-sm">
           <table className="min-w-full border-collapse text-sm">
-            <thead className="bg-slate-800/70 text-left text-slate-100">
+            <thead className="bg-white/10 text-left text-white">
               <tr>
                 <th className="px-4 py-3 font-semibold">Serial Number</th>
                 <th className="px-4 py-3 font-semibold">Conference Name</th>
                 <th className="px-4 py-3 font-semibold">Conference Date</th>
+                <th className="px-4 py-3 font-semibold">Papers Submitted</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Publication Date</th>
                 <th className="px-4 py-3 font-semibold">Expected Publication Month</th>
@@ -259,20 +290,21 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {entries.length === 0 ? (
+              {sortedEntries.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-10 text-center text-gray-400">
                     No records yet. Add your first conference entry using the form above.
                   </td>
                 </tr>
               ) : (
-                entries.map((entry, index) => (
-                  <tr key={entry.id} className="border-t border-slate-800 text-slate-200">
+                sortedEntries.map((entry, index) => (
+                  <tr key={entry.id} className="border-t border-white/20 text-gray-200">
                     <td className="px-4 py-3 font-medium text-white">{index + 1}</td>
                     <td className="px-4 py-3">{entry.conferenceName}</td>
                     <td className="px-4 py-3">{entry.conferenceDate || "-"}</td>
+                    <td className="px-4 py-3">{entry.papersSubmitted || "-"}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status)}`}>
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate)}`}>
                         {entry.status}
                       </span>
                     </td>
@@ -284,14 +316,14 @@ export default function App() {
                         <button
                           type="button"
                           onClick={() => editEntry(entry)}
-                          className="rounded-md border border-cyan-500/60 px-3 py-1.5 text-xs font-medium text-cyan-200 transition hover:bg-cyan-500/10"
+                          className="rounded-md border border-cyan-500/60 px-3 py-1.5 text-xs font-medium text-cyan-200 transition hover:bg-cyan-500/20"
                         >
                           Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => removeEntry(entry.id)}
-                          className="rounded-md border border-rose-500/60 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/10"
+                          className="rounded-md border border-red-500/60 px-3 py-1.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
                         >
                           Delete
                         </button>
