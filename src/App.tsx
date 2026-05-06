@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState, useEffect } from "react";
 
 type ConferenceEntry = {
   id: number;
@@ -26,7 +26,15 @@ const categories = ["IEEE", "Springers", "CRC"];
 
 export default function App() {
   const [form, setForm] = useState<ConferenceForm>(emptyForm);
-  const [entries, setEntries] = useState<ConferenceEntry[]>([]);
+  const [entries, setEntries] = useState<ConferenceEntry[]>(() => {
+    const saved = localStorage.getItem("conference_entries");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem("conference_entries", JSON.stringify(entries));
+  }, [entries]);
 
   const nextId = useMemo(() => {
     if (entries.length === 0) {
@@ -36,18 +44,31 @@ export default function App() {
     return Math.max(...entries.map((entry) => entry.id)) + 1;
   }, [entries]);
 
-  const addEntry = (event: FormEvent<HTMLFormElement>) => {
+  const submitEntry = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    setEntries((previous) => [
-      ...previous,
-      {
-        id: nextId,
-        ...form,
-      },
-    ]);
+    if (editingId !== null) {
+      setEntries((previous) =>
+        previous.map((entry) => (entry.id === editingId ? { ...form, id: editingId } : entry))
+      );
+      setEditingId(null);
+    } else {
+      setEntries((previous) => [
+        ...previous,
+        {
+          id: nextId,
+          ...form,
+        },
+      ]);
+    }
 
     setForm(emptyForm);
+  };
+
+  const editEntry = (entry: ConferenceEntry) => {
+    setEditingId(entry.id);
+    const { id, ...formData } = entry;
+    setForm(formData);
   };
 
   const removeEntry = (id: number) => {
@@ -80,7 +101,7 @@ export default function App() {
   };
 
   const statusClassName = (status: string) => {
-    if (status === "Accepted") {
+    if (status === "Presented") {
       return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
     }
 
@@ -122,7 +143,7 @@ export default function App() {
         </section>
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 shadow-sm sm:p-6">
-          <form onSubmit={addEntry} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <form onSubmit={submitEntry} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <label className="space-y-1">
               <span className="text-sm font-medium text-slate-200">Conference Name</span>
               <input
@@ -200,13 +221,25 @@ export default function App() {
               </select>
             </label>
 
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <button
                 type="submit"
                 className="w-full rounded-md bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
               >
-                Add Entry
+                {editingId !== null ? "Update Entry" : "Add Entry"}
               </button>
+              {editingId !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm(emptyForm);
+                  }}
+                  className="w-full rounded-md border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </form>
         </section>
@@ -247,13 +280,22 @@ export default function App() {
                     <td className="px-4 py-3">{formatMonth(entry.expectedPublicationMonth)}</td>
                     <td className="px-4 py-3">{entry.conferenceCategory}</td>
                     <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => removeEntry(entry.id)}
-                        className="rounded-md border border-rose-500/60 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/10"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => editEntry(entry)}
+                          className="rounded-md border border-cyan-500/60 px-3 py-1.5 text-xs font-medium text-cyan-200 transition hover:bg-cyan-500/10"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeEntry(entry.id)}
+                          className="rounded-md border border-rose-500/60 px-3 py-1.5 text-xs font-medium text-rose-200 transition hover:bg-rose-500/10"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
