@@ -6,6 +6,8 @@ type ConferenceEntry = {
   conferenceDate: string;
   status: string;
   isRegistered?: boolean;
+  presentationDate?: string;
+  presentationTime?: string;
   publicationDate: string;
   expectedPublicationMonth: string;
   conferenceCategory: string;
@@ -19,6 +21,8 @@ const emptyForm: ConferenceForm = {
   conferenceDate: "",
   status: "Accepted",
   isRegistered: false,
+  presentationDate: "",
+  presentationTime: "",
   publicationDate: "",
   expectedPublicationMonth: "",
   conferenceCategory: "IEEE",
@@ -222,6 +226,29 @@ export default function App() {
               </label>
             )}
 
+            {form.status === "Accepted" && form.isRegistered && (
+              <>
+                <label className="space-y-1">
+                  <span className="text-sm font-medium text-gray-200">Presentation Date</span>
+                  <input
+                    type="date"
+                    value={form.presentationDate || ""}
+                    onChange={(event) => setForm((previous) => ({ ...previous, presentationDate: event.target.value }))}
+                    className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-sm font-medium text-gray-200">Presentation Time</span>
+                  <input
+                    type="time"
+                    value={form.presentationTime || ""}
+                    onChange={(event) => setForm((previous) => ({ ...previous, presentationTime: event.target.value }))}
+                    className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  />
+                </label>
+              </>
+            )}
+
             <label className="space-y-1">
               <span className="text-sm font-medium text-gray-200">Papers Submitted</span>
               <input
@@ -335,15 +362,24 @@ export default function App() {
                     <td className="px-4 py-3">{entry.conferenceDate || "-"}</td>
                     <td className="px-4 py-3">{entry.papersSubmitted || "-"}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate)}`}>
-                          {entry.status}
-                        </span>
-                        {entry.status === "Accepted" && (
-                          <div 
-                            className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 ${entry.isRegistered ? 'bg-green-500' : 'bg-red-500'}`} 
-                            title={entry.isRegistered ? "Registered" : "Not Registered"} 
-                          />
+                      <div className="flex flex-col gap-1 items-start">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate)}`}>
+                            {entry.status}
+                          </span>
+                          {entry.status === "Accepted" && (
+                            <div 
+                              className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 ${entry.isRegistered ? 'bg-green-500' : 'bg-red-500'}`} 
+                              title={entry.isRegistered ? "Registered" : "Not Registered"} 
+                            />
+                          )}
+                        </div>
+                        {entry.status === "Accepted" && entry.isRegistered && (entry.presentationDate || entry.presentationTime) && (
+                          <div className="text-[10px] text-gray-400 pl-1 whitespace-nowrap">
+                            {entry.presentationDate && <span>{entry.presentationDate}</span>}
+                            {entry.presentationDate && entry.presentationTime && <span> at </span>}
+                            {entry.presentationTime && <span>{entry.presentationTime}</span>}
+                          </div>
                         )}
                       </div>
                     </td>
