@@ -5,6 +5,7 @@ type ConferenceEntry = {
   conferenceName: string;
   conferenceDate: string;
   status: string;
+  isRegistered?: boolean;
   publicationDate: string;
   expectedPublicationMonth: string;
   conferenceCategory: string;
@@ -17,6 +18,7 @@ const emptyForm: ConferenceForm = {
   conferenceName: "",
   conferenceDate: "",
   status: "Accepted",
+  isRegistered: false,
   publicationDate: "",
   expectedPublicationMonth: "",
   conferenceCategory: "IEEE",
@@ -86,13 +88,20 @@ export default function App() {
   };
 
   const counts = useMemo(() => {
-    const ieee = entries.filter((entry) => entry.conferenceCategory === "IEEE").length;
-    const springers = entries.filter((entry) => entry.conferenceCategory === "Springers").length;
-    const crc = entries.filter((entry) => entry.conferenceCategory === "CRC").length;
-    const other = entries.length - ieee - springers - crc;
+    const sumPapers = (condition: (entry: ConferenceEntry) => boolean) =>
+      entries
+        .filter(condition)
+        .reduce((sum, entry) => sum + (Number(entry.papersSubmitted) || 0), 0);
+
+    const ieee = sumPapers((entry) => entry.conferenceCategory === "IEEE");
+    const springers = sumPapers((entry) => entry.conferenceCategory === "Springers");
+    const crc = sumPapers((entry) => entry.conferenceCategory === "CRC");
+    const other = sumPapers(
+      (entry) => !["IEEE", "Springers", "CRC"].includes(entry.conferenceCategory)
+    );
 
     return {
-      total: entries.length,
+      total: sumPapers(() => true),
       ieee,
       springers,
       crc,
@@ -134,23 +143,23 @@ export default function App() {
 
         <section className="grid gap-4 rounded-2xl border border-white/20 bg-black p-4 sm:grid-cols-2 lg:grid-cols-5">
           <div>
-            <p className="text-xs uppercase tracking-wider text-gray-400">Total Papers</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Total Papers Submitted</p>
             <p className="mt-1 text-3xl font-semibold text-white">{counts.total}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-gray-400">IEEE</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">IEEE Submitted</p>
             <p className="mt-1 text-2xl font-semibold text-cyan-300">{counts.ieee}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-gray-400">Springers</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Springers Submitted</p>
             <p className="mt-1 text-2xl font-semibold text-violet-300">{counts.springers}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-gray-400">CRC</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">CRC Submitted</p>
             <p className="mt-1 text-2xl font-semibold text-fuchsia-300">{counts.crc}</p>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-wider text-gray-400">Other</p>
+            <p className="text-xs uppercase tracking-wider text-gray-400">Other Submitted</p>
             <p className="mt-1 text-2xl font-semibold text-gray-200">{counts.other}</p>
           </div>
         </section>
@@ -193,6 +202,25 @@ export default function App() {
                 ))}
               </select>
             </label>
+
+            {form.status === "Accepted" && (
+              <label className="space-y-1 flex flex-col justify-end pb-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={form.isRegistered || false}
+                    onChange={(event) =>
+                      setForm((previous) => ({
+                        ...previous,
+                        isRegistered: event.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-white/30 bg-black text-cyan-400"
+                  />
+                  <span className="text-sm font-medium text-gray-200">Registered</span>
+                </div>
+              </label>
+            )}
 
             <label className="space-y-1">
               <span className="text-sm font-medium text-gray-200">Papers Submitted</span>
@@ -298,15 +326,26 @@ export default function App() {
                 </tr>
               ) : (
                 sortedEntries.map((entry, index) => (
-                  <tr key={entry.id} className="border-t border-white/20 text-gray-200">
+                  <tr 
+                    key={entry.id} 
+                    className={`border-t border-white/20 text-gray-200 ${entry.status === 'Accepted' ? 'bg-amber-900/40 border-l-4 border-l-amber-500' : ''}`}
+                  >
                     <td className="px-4 py-3 font-medium text-white">{index + 1}</td>
                     <td className="px-4 py-3">{entry.conferenceName}</td>
                     <td className="px-4 py-3">{entry.conferenceDate || "-"}</td>
                     <td className="px-4 py-3">{entry.papersSubmitted || "-"}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate)}`}>
-                        {entry.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate)}`}>
+                          {entry.status}
+                        </span>
+                        {entry.status === "Accepted" && (
+                          <div 
+                            className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 ${entry.isRegistered ? 'bg-green-500' : 'bg-red-500'}`} 
+                            title={entry.isRegistered ? "Registered" : "Not Registered"} 
+                          />
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">{entry.publicationDate || "-"}</td>
                     <td className="px-4 py-3">{formatMonth(entry.expectedPublicationMonth)}</td>
