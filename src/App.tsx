@@ -2,7 +2,8 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Bell, Download, X, Search, Check, Plus, ArrowLeft } from "lucide-react";
-import emailjs from "@emailjs/browser";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 type ConferenceEntry = {
   id: number;
@@ -63,92 +64,101 @@ export default function App() {
   const [futureForm, setFutureForm] = useState({ conferenceName: "", submissionDeadline: "", notes: "" });
 
   const [showNotifyModal, setShowNotifyModal] = useState(false);
-  const [notifyConfig, setNotifyConfig] = useState(() => {
-    const saved = localStorage.getItem("conference_notify_config");
-    return saved ? JSON.parse(saved) : { email: "", timeframe: "1_day", publicKey: "", serviceId: "", templateId: "" };
+  const [inAppNotifications, setInAppNotifications] = useState<any[]>(() => {
+    const saved = localStorage.getItem("app_notifications");
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [notifyForm, setNotifyForm] = useState({
+    conferenceId: "",
+    message: "",
+    notifyDate: "",
+    notifyTime: ""
   });
 
   const [scholarInput, setScholarInput] = useState("");
-  const [fetchedScholar, setFetchedScholar] = useState<{citations: number, id: string} | null>(null);
-  const [scholarSubmitted, setScholarSubmitted] = useState<{citations: number, id: string} | null>(() => {
+  const [isFetchingScholar, setIsFetchingScholar] = useState(false);
+  const [fetchedScholar, setFetchedScholar] = useState<{name: string, citations: string, hIndex: string, i10Index: string, id: string} | null>(null);
+  const [scholarSubmitted, setScholarSubmitted] = useState<{name: string, citations: string, hIndex: string, i10Index: string, id: string} | null>(() => {
     const saved = localStorage.getItem("scholar_data");
     return saved ? JSON.parse(saved) : null;
   });
 
   useEffect(() => {
-    localStorage.setItem("conference_notify_config", JSON.stringify(notifyConfig));
-  }, [notifyConfig]);
-
-  useEffect(() => {
-    localStorage.setItem("conference_entries", JSON.stringify(entries));
-  }, [entries]);
-
-  useEffect(() => {
-    localStorage.setItem("future_conferences", JSON.stringify(futureConfs));
-  }, [futureConfs]);
+    localStorage.setItem("app_notifications", JSON.stringify(inAppNotifications));
+  }, [inAppNotifications]);
 
   useEffect(() => {
     localStorage.setItem("scholar_data", JSON.stringify(scholarSubmitted));
   }, [scholarSubmitted]);
 
   useEffect(() => {
+    // In-app notification checker every minute
     const checkReminders = setInterval(() => {
-      if (!notifyConfig.email) return;
-
       const now = new Date();
-      let entriesUpdated = false;
+      let updated = false;
 
-      const newEntries = entries.map((entry) => {
-        if (entry.status !== "Accepted" || !entry.presentationDate || !entry.presentationTime || entry.notified) {
-          return entry;
-        }
+      const updatedNotifs = inAppNotifications.map(notif => {
+        if (notif.isNotified) return notif;
 
-        const presentationDateTime = new Date(`${entry.presentationDate}T${entry.presentationTime}`);
-        if (isNaN(presentationDateTime.getTime())) return entry;
+        const notifyDateTime = new Date(`${notif.notifyDate}T${notif.notifyTime}`);
+        if (isNaN(notifyDateTime.getTime())) return notif;
 
-        let offsetMs = 0;
-        switch (notifyConfig.timeframe) {
-          case "1_hour": offsetMs = 60 * 60 * 1000; break;
-          case "1_day": offsetMs = 24 * 60 * 60 * 1000; break;
-          case "2_days": offsetMs = 48 * 60 * 60 * 1000; break;
-          default: offsetMs = 24 * 60 * 60 * 1000;
-        }
-
-        const timeDifference = presentationDateTime.getTime() - now.getTime();
-        
-        if (timeDifference > 0 && timeDifference <= offsetMs) {
-          try {
-            const templateParams = {
-              to_email: notifyConfig.email,
-              conference_name: entry.conferenceName,
-              presentation_date: entry.presentationDate,
-              presentation_time: entry.presentationTime,
-            };
-            
-            console.log("Email Notification Triggered for:", templateParams);
-            
-            if (notifyConfig.serviceId && notifyConfig.templateId && notifyConfig.publicKey) {
-              emailjs.send(notifyConfig.serviceId, notifyConfig.templateId, templateParams as Record<string, unknown>, notifyConfig.publicKey)
-                .then((result: any) => console.log(result.text))
-                .catch((error: any) => console.error(error));
-            }
-            
-            entriesUpdated = true;
-            return { ...entry, notified: true };
-          } catch (error) {
-            console.error("Failed to send notification email:", error);
+        if (now >= notifyDateTime) {
+          toast.info(`Reminder: ${notif.message}`, {
+            position: "top-right",
+            autoClose: 10000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "dark",
+          });
+          
+          if ("Notification" in window && window.Notification.permission === "granted") {
+            new window.Notification("Conference Tracker Reminder", { body: notif.message });
           }
+
+          updated = true;
+          return { ...notif, isNotified: true };
         }
-        return entry;
+        return notif;
       });
 
-      if (entriesUpdated) {
-        setEntries(newEntries);
+      if (updated) {
+        setInAppNotifications(updatedNotifs);
       }
-    }, 60000);
+    }, 30000);
 
     return () => clearInterval(checkReminders);
-  }, [entries, notifyConfig]);
+  }, [inAppNotifications]);
+
+  const saveNotificationSettings = () => {
+    if (!notifyForm.conferenceId || !notifyForm.notifyDate || !notifyForm.notifyTime) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    
+    // Request browser notification permission
+    if ("Notification" in window && window.Notification.permission !== "denied" && window.Notification.permission !== "granted") {
+      window.Notification.requestPermission();
+    }
+
+    const conf = entries.find(e => e.id.toString() === notifyForm.conferenceId);
+    
+    setInAppNotifications(prev => [...prev, {
+      id: Date.now(),
+      conferenceName: conf ? conf.conferenceName : "Unknown",
+      message: notifyForm.message,
+      notifyDate: notifyForm.notifyDate,
+      notifyTime: notifyForm.notifyTime,
+      isNotified: false
+    }]);
+
+    setNotifyForm({ conferenceId: "", message: "", notifyDate: "", notifyTime: "" });
+    setShowNotifyModal(false);
+    toast.success("Notification scheduled successfully!");
+  };
 
   const nextId = useMemo(() => {
     if (entries.length === 0) return 1;
@@ -257,11 +267,38 @@ export default function App() {
     doc.save("conference-data.pdf");
   };
 
-  const handleFetchScholar = () => {
+  const handleFetchScholar = async () => {
     if (!scholarInput.trim()) return;
-    setTimeout(() => {
-      setFetchedScholar({ id: scholarInput, citations: Math.floor(Math.random() * 500) + 120 });
-    }, 600);
+    setIsFetchingScholar(true);
+    try {
+      const targetUrl = `https://scholar.google.com/citations?user=${scholarInput}&hl=en`;
+      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
+      const data = await response.json();
+      
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.contents, "text/html");
+      
+      const name = doc.querySelector("#gsc_prf_in")?.textContent || "Unknown Name";
+      const tds = doc.querySelectorAll("#gsc_rsb_st td.gsc_rsb_std");
+      
+      const citations = tds[0]?.textContent || "0";
+      const hIndex = tds[2]?.textContent || "0";
+      const i10Index = tds[4]?.textContent || "0";
+
+      setFetchedScholar({ 
+        id: scholarInput, 
+        name,
+        citations,
+        hIndex,
+        i10Index
+      });
+      toast.success("Scholar data fetched successfully!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to fetch Google Scholar data.");
+    } finally {
+      setIsFetchingScholar(false);
+    }
   };
 
   const handleSubmitScholar = () => {
@@ -274,19 +311,20 @@ export default function App() {
 
   if (currentView === "welcome") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black px-4 font-['Comic_Sans_MS',_Comic_Sans,_cursive]">
-        <div className="text-center space-y-6">
-          <h1 className="text-5xl sm:text-7xl font-bold text-white tracking-wider">
-            Welcome to <span className="text-cyan-400">Tracker</span>
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-950 via-purple-900 to-black px-4 font-sans relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+        <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-purple-500/20 shadow-2xl">
+          <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
+            Welcome to <span className="text-purple-400 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-300">Tracker</span>
           </h1>
-          <p className="text-gray-400 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed">
-            Record your publications, manage presentations, and monitor your scholar citations seamlessly.
+          <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light">
+            Record your publications, manage presentations, and monitor your scholar citations seamlessly through our professional dashboard.
           </p>
           <button 
             onClick={() => setCurrentView("dashboard")}
-            className="mt-10 rounded-full bg-cyan-600 px-10 py-4 text-xl font-bold text-white shadow-lg transition hover:scale-105 hover:bg-cyan-500 cursor-pointer border border-cyan-500 text-center inline-block"
+            className="mt-10 rounded-full bg-purple-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all hover:scale-105 hover:bg-purple-500 cursor-pointer border border-purple-400 text-center inline-block uppercase tracking-widest"
           >
-            START
+            Get Started
           </button>
         </div>
       </main>
@@ -295,12 +333,13 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-8 font-['Comic_Sans_MS',_Comic_Sans,_cursive]">
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-8 font-sans">
+        <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
             <button 
               onClick={() => setCurrentView("dashboard")}
-              className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition"
+              className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition"
             >
               <ArrowLeft size={20} />
               Back to Dashboard
@@ -308,7 +347,7 @@ export default function App() {
           </header>
           
           <div className="rounded-2xl border border-white/20 bg-gray-900 shadow-xl p-6 sm:p-8">
-            <h2 className="text-2xl font-bold mb-6">Add Conference for Further Submission</h2>
+            <h2 className="text-2xl font-bold mb-6 text-purple-100">Add Conference for Further Submission</h2>
             <form onSubmit={submitFutureEntry} className="space-y-4">
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-gray-200">Conference Name</span>
@@ -316,7 +355,7 @@ export default function App() {
                   required
                   value={futureForm.conferenceName}
                   onChange={(e) => setFutureForm(prev => ({...prev, conferenceName: e.target.value}))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                   placeholder="e.g. CVPR 2028"
                 />
               </label>
@@ -328,7 +367,7 @@ export default function App() {
                   type="date"
                   value={futureForm.submissionDeadline}
                   onChange={(e) => setFutureForm(prev => ({...prev, submissionDeadline: e.target.value}))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                 />
               </label>
 
@@ -337,7 +376,7 @@ export default function App() {
                 <textarea
                   value={futureForm.notes}
                   onChange={(e) => setFutureForm(prev => ({...prev, notes: e.target.value}))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                   placeholder="Additional details about the tracks, requirements, etc."
                   rows={3}
                 />
@@ -345,7 +384,7 @@ export default function App() {
 
               <button
                 type="submit"
-                className="w-full sm:w-auto rounded-md bg-cyan-700 hover:bg-cyan-600 px-6 py-2 text-sm font-semibold text-white transition"
+                className="w-full sm:w-auto rounded-md bg-purple-700 hover:bg-purple-600 px-6 py-2 text-sm font-semibold text-white transition"
               >
                 Save Timeline
               </button>
@@ -354,7 +393,7 @@ export default function App() {
 
           <div className="mt-8 rounded-2xl border border-white/20 bg-black shadow-sm overflow-hidden">
             <div className="px-6 py-4 bg-white/5 border-b border-white/10">
-              <h3 className="font-semibold text-lg">Upcoming Submissions</h3>
+              <h3 className="font-semibold text-lg text-purple-100">Upcoming Submissions</h3>
             </div>
             {futureConfs.length === 0 ? (
               <div className="p-6 text-center text-gray-400">No upcoming conferences planned.</div>
@@ -364,7 +403,7 @@ export default function App() {
                   <div key={conf.id} className="p-6 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
                     <div>
                       <h4 className="font-bold text-lg text-white">{conf.conferenceName}</h4>
-                      <p className="text-sm text-cyan-300">Deadline: {conf.submissionDeadline}</p>
+                      <p className="text-sm text-purple-300">Deadline: {conf.submissionDeadline}</p>
                       {conf.notes && <p className="text-sm text-gray-400 mt-2">{conf.notes}</p>}
                     </div>
                     <button
@@ -384,7 +423,8 @@ export default function App() {
   }
 
   return (
-    <main className="relative min-h-screen bg-black px-4 py-8 text-white sm:px-8 font-['Comic_Sans_MS',_Comic_Sans,_cursive]">
+    <main className="relative min-h-screen bg-black px-4 py-8 text-white sm:px-8 font-sans">
+      <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-gray-900 p-6 shadow-xl relative">
@@ -396,72 +436,59 @@ export default function App() {
             </button>
             <h3 className="text-xl font-semibold text-white mb-4">Notification Settings</h3>
             <p className="text-sm text-gray-300 mb-6 flex flex-col gap-2">
-              <span>Receive email reminders before your scheduled presentation date and time.</span>
-              <span className="text-[10px] text-amber-500">Note: Leave keys blank to use console logs instead.</span>
+              <span>Set an in-app reminder for a specific conference.</span>
             </p>
             
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Email Address</span>
-                <input
-                  type="email"
-                  value={notifyConfig.email}
-                  onChange={(e) => setNotifyConfig({...notifyConfig, email: e.target.value})}
-                  placeholder="your.email@example.com"
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
-                />
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-[11px] font-semibold text-cyan-500 uppercase tracking-widest block mt-3 mb-1">EmailJS Configuration (Optional)</span>
-                <span className="text-sm font-medium text-gray-200">Public Key</span>
-                <input
-                  type="text"
-                  value={notifyConfig.publicKey || ""}
-                  onChange={(e) => setNotifyConfig({...notifyConfig, publicKey: e.target.value})}
-                  placeholder="Public Key"
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
-                />
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Service ID</span>
-                <input
-                  type="text"
-                  value={notifyConfig.serviceId || ""}
-                  onChange={(e) => setNotifyConfig({...notifyConfig, serviceId: e.target.value})}
-                  placeholder="Service ID"
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
-                />
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Template ID</span>
-                <input
-                  type="text"
-                  value={notifyConfig.templateId || ""}
-                  onChange={(e) => setNotifyConfig({...notifyConfig, templateId: e.target.value})}
-                  placeholder="Template ID"
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
-                />
-              </label>
-
-              <label className="block space-y-1 pt-3">
-                <span className="text-sm font-medium text-gray-200">Notify Before</span>
+                <span className="text-sm font-medium text-gray-200">Conference Name</span>
                 <select
-                  value={notifyConfig.timeframe}
-                  onChange={(e) => setNotifyConfig({...notifyConfig, timeframe: e.target.value})}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  value={notifyForm.conferenceId}
+                  onChange={(e) => setNotifyForm({...notifyForm, conferenceId: e.target.value})}
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                 >
-                  <option value="1_hour">1 Hour</option>
-                  <option value="1_day">1 Day</option>
-                  <option value="2_days">2 Days</option>
+                  <option value="" disabled>Select a conference</option>
+                  {entries.map(conf => (
+                    <option key={conf.id} value={conf.id}>{conf.conferenceName}</option>
+                  ))}
+                  {entries.length === 0 && <option value="" disabled>No conferences available</option>}
                 </select>
               </label>
 
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Custom Message</span>
+                <textarea
+                  value={notifyForm.message}
+                  onChange={(e) => setNotifyForm({...notifyForm, message: e.target.value})}
+                  placeholder="e.g., Prepare slides for presentation"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  rows={2}
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Notify Date</span>
+                <input
+                  type="date"
+                  value={notifyForm.notifyDate}
+                  onChange={(e) => setNotifyForm({...notifyForm, notifyDate: e.target.value})}
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Notify Time</span>
+                <input
+                  type="time"
+                  value={notifyForm.notifyTime}
+                  onChange={(e) => setNotifyForm({...notifyForm, notifyTime: e.target.value})}
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                />
+              </label>
+
               <button
-                onClick={() => setShowNotifyModal(false)}
-                className="w-full mt-4 rounded-md bg-cyan-700 hover:bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition"
+                onClick={saveNotificationSettings}
+                className="w-full mt-4 rounded-md bg-purple-700 hover:bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition"
               >
                 Save Settings
               </button>
@@ -477,7 +504,7 @@ export default function App() {
           <div className="rounded-2xl border border-white/20 bg-black p-4 space-y-3">
             <button
               onClick={() => setShowNotifyModal(true)}
-              className="w-full flex justify-between items-center rounded-md border border-cyan-500/60 bg-cyan-500/10 px-4 py-3 text-sm font-medium text-cyan-300 transition hover:bg-cyan-500/20"
+              className="w-full flex justify-between items-center rounded-md border border-purple-500/60 bg-purple-500/10 px-4 py-3 text-sm font-medium text-purple-300 transition hover:bg-purple-500/20"
             >
               <span className="flex gap-2 items-center"><Bell size={16} /> Notify</span>
             </button>
@@ -498,42 +525,64 @@ export default function App() {
           </div>
           
           <div className="rounded-2xl border border-white/20 bg-black p-4 space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan-300">Overall Scholar Add</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-purple-300">Overall Scholar Add</h3>
             <p className="text-xs text-gray-400">Link your Google Scholar profile ID to fetch real-time citations.</p>
             
             <div className="flex flex-col gap-2">
               <input
                 value={scholarInput}
                 onChange={(e) => setScholarInput(e.target.value)}
-                placeholder="Scholar ID"
-                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                placeholder="Scholar ID (e.g. X6loXjAAAAAJ)"
+                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
               />
               <button
                 onClick={handleFetchScholar}
-                disabled={!scholarInput}
-                className="w-full flex justify-center items-center gap-2 rounded-md bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+                disabled={!scholarInput || isFetchingScholar}
+                className="w-full flex justify-center items-center gap-2 rounded-md bg-purple-700 hover:bg-purple-600 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
               >
-                <Search size={14} /> Fetch
+                <Search size={14} /> {isFetchingScholar ? "Fetching..." : "Fetch"}
               </button>
             </div>
 
-            {fetchedScholar && (
-              <div className="mt-3 p-3 border border-white/20 rounded-md bg-gray-900 border-l-4 border-l-amber-500">
+            {fetchedScholar && !scholarSubmitted && (
+              <div className="mt-3 p-3 border border-white/20 rounded-md bg-gray-900 border-l-4 border-l-purple-500">
+                <p className="text-sm font-semibold text-white truncate">{fetchedScholar.name}</p>
                 <p className="text-xs text-gray-300 mb-2">ID Found: {fetchedScholar.id}</p>
                 <button
                   onClick={handleSubmitScholar}
-                  className="w-full flex justify-center items-center gap-2 rounded-md bg-amber-600 hover:bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+                  className="w-full flex justify-center items-center gap-2 rounded-md bg-purple-600 hover:bg-purple-500 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
                 >
-                  <Check size={14} /> Submit
+                  <Check size={14} /> Link Account
                 </button>
               </div>
             )}
 
             {scholarSubmitted && (
-              <div className="mt-4 p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-center">
-                <p className="text-xs uppercase tracking-wider text-cyan-400 mb-1">Current Citations</p>
-                <p className="text-4xl font-bold text-white">{scholarSubmitted.citations}</p>
-                <p className="text-xs text-gray-400 mt-2">Real-time data from Scholar</p>
+              <div className="mt-4 p-4 rounded-xl border border-purple-500/30 bg-purple-500/10 text-center flex flex-col gap-2">
+                <div className="flex justify-between items-center bg-black/50 p-2 rounded-md border border-white/10">
+                  <span className="text-xs text-gray-400">Name</span>
+                  <span className="text-sm font-semibold truncate text-white max-w-[120px]">{scholarSubmitted.name}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                   <div className="bg-black/50 p-2 rounded-md border border-white/10">
+                     <p className="text-[10px] uppercase tracking-wider text-purple-400">Citations</p>
+                     <p className="text-xl font-bold text-white">{scholarSubmitted.citations}</p>
+                   </div>
+                   <div className="bg-black/50 p-2 rounded-md border border-white/10">
+                     <p className="text-[10px] uppercase tracking-wider text-purple-400">h-index</p>
+                     <p className="text-xl font-bold text-white">{scholarSubmitted.hIndex}</p>
+                   </div>
+                   <div className="bg-black/50 p-2 rounded-md border border-white/10 col-span-2">
+                     <p className="text-[10px] uppercase tracking-wider text-purple-400">i10-index</p>
+                     <p className="text-xl font-bold text-white">{scholarSubmitted.i10Index}</p>
+                   </div>
+                </div>
+                <button 
+                  onClick={() => setScholarSubmitted(null)} 
+                  className="text-xs text-red-400 hover:text-red-300 mt-2 transition"
+                >
+                  Unlink Account
+                </button>
               </div>
             )}
           </div>
@@ -542,7 +591,7 @@ export default function App() {
         {/* Main Content */}
         <div className="flex-1 space-y-6 w-full max-w-full overflow-hidden">
           <header className="rounded-2xl border border-white/20 bg-black p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Publication Tracker</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">Publication Tracker</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl truncate">Conference Dashboard</h1>
             <p className="mt-2 max-w-2xl text-sm text-gray-300">
               Add your conference papers, track acceptance and presentations, and monitor category-wise publication counts.
@@ -556,7 +605,7 @@ export default function App() {
             </div>
             <div>
               <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">IEEE</p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-cyan-300">{counts.ieee}</p>
+              <p className="mt-1 text-xl sm:text-2xl font-semibold text-purple-300">{counts.ieee}</p>
             </div>
             <div>
               <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">Springers</p>
@@ -580,7 +629,7 @@ export default function App() {
                   required
                   value={form.conferenceName}
                   onChange={(event) => setForm((previous) => ({ ...previous, conferenceName: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                   placeholder="e.g. ICML 2027"
                 />
               </label>
@@ -592,7 +641,7 @@ export default function App() {
                   type="date"
                   value={form.conferenceDate}
                   onChange={(event) => setForm((previous) => ({ ...previous, conferenceDate: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                 />
               </label>
 
@@ -601,7 +650,7 @@ export default function App() {
                 <select
                   value={form.status}
                   onChange={(event) => setForm((previous) => ({ ...previous, status: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                 >
                   {statuses.map((status) => (
                     <option key={status} value={status}>
@@ -623,7 +672,7 @@ export default function App() {
                           isRegistered: event.target.checked,
                         }))
                       }
-                      className="h-4 w-4 rounded border-white/30 bg-black text-cyan-400"
+                      className="h-4 w-4 rounded border-white/30 bg-black text-purple-400 accent-purple-600"
                     />
                     <span className="text-sm font-medium text-gray-200">Registered</span>
                   </div>
@@ -638,7 +687,7 @@ export default function App() {
                       type="date"
                       value={form.presentationDate || ""}
                       onChange={(event) => setForm((previous) => ({ ...previous, presentationDate: event.target.value }))}
-                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                     />
                   </label>
                   <label className="space-y-1">
@@ -647,7 +696,7 @@ export default function App() {
                       type="time"
                       value={form.presentationTime || ""}
                       onChange={(event) => setForm((previous) => ({ ...previous, presentationTime: event.target.value }))}
-                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                     />
                   </label>
                 </>
@@ -665,7 +714,7 @@ export default function App() {
                       papersSubmitted: event.target.value ? Number(event.target.value) : "",
                     }))
                   }
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                   placeholder="e.g. 1"
                 />
               </label>
@@ -676,7 +725,7 @@ export default function App() {
                   type="date"
                   value={form.publicationDate}
                   onChange={(event) => setForm((previous) => ({ ...previous, publicationDate: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                 />
               </label>
 
@@ -691,7 +740,7 @@ export default function App() {
                       expectedPublicationMonth: event.target.value,
                     }))
                   }
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                 />
               </label>
 
@@ -700,7 +749,7 @@ export default function App() {
                 <select
                   value={form.conferenceCategory}
                   onChange={(event) => setForm((previous) => ({ ...previous, conferenceCategory: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
@@ -710,10 +759,10 @@ export default function App() {
                 </select>
               </label>
 
-              <div className="flex items-end gap-2">
+              <div className="flex items-end gap-2 xl:col-span-2">
                 <button
                   type="submit"
-                  className="w-full rounded-md bg-cyan-700 hover:bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+                  className="w-full rounded-md bg-purple-700 hover:bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
                 >
                   {editingId !== null ? "Update Entry" : "Add Entry"}
                 </button>
@@ -793,7 +842,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => editEntry(entry)}
-                            className="rounded-md border border-cyan-500/60 px-3 py-1.5 text-xs font-medium text-cyan-200 transition hover:bg-cyan-500/20 cursor-pointer"
+                          className="rounded-md border border-purple-500/60 px-3 py-1.5 text-xs font-medium text-purple-200 transition hover:bg-purple-500/20 cursor-pointer"
                           >
                             Edit
                           </button>

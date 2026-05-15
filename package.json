@@ -10,12 +10,16 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "axios": "^1.16.1",
+    "axios-jsonp": "^1.0.4",
+    "cheerio": "^1.2.0",
     "clsx": "2.1.1",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^1.14.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-toastify": "^11.1.0",
     "tailwind-merge": "3.4.0"
   },
   "devDependencies": {
