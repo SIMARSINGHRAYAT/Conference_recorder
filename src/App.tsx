@@ -2,6 +2,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Bell, Download, X, Search, Check, Plus, ArrowLeft } from "lucide-react";
+import emailjs from "@emailjs/browser";
 
 type ConferenceEntry = {
   id: number;
@@ -64,7 +65,7 @@ export default function App() {
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyConfig, setNotifyConfig] = useState(() => {
     const saved = localStorage.getItem("conference_notify_config");
-    return saved ? JSON.parse(saved) : { email: "", timeframe: "1_day" };
+    return saved ? JSON.parse(saved) : { email: "", timeframe: "1_day", publicKey: "", serviceId: "", templateId: "" };
   });
 
   const [scholarInput, setScholarInput] = useState("");
@@ -117,12 +118,21 @@ export default function App() {
         
         if (timeDifference > 0 && timeDifference <= offsetMs) {
           try {
-            console.log("Email Notification Triggered for:", {
+            const templateParams = {
               to_email: notifyConfig.email,
               conference_name: entry.conferenceName,
               presentation_date: entry.presentationDate,
               presentation_time: entry.presentationTime,
-            });
+            };
+            
+            console.log("Email Notification Triggered for:", templateParams);
+            
+            if (notifyConfig.serviceId && notifyConfig.templateId && notifyConfig.publicKey) {
+              emailjs.send(notifyConfig.serviceId, notifyConfig.templateId, templateParams as Record<string, unknown>, notifyConfig.publicKey)
+                .then((result: any) => console.log(result.text))
+                .catch((error: any) => console.error(error));
+            }
+            
             entriesUpdated = true;
             return { ...entry, notified: true };
           } catch (error) {
@@ -385,9 +395,12 @@ export default function App() {
               <X size={20} />
             </button>
             <h3 className="text-xl font-semibold text-white mb-4">Notification Settings</h3>
-            <p className="text-sm text-gray-300 mb-6">Receive email reminders before your scheduled presentation date and time.</p>
+            <p className="text-sm text-gray-300 mb-6 flex flex-col gap-2">
+              <span>Receive email reminders before your scheduled presentation date and time.</span>
+              <span className="text-[10px] text-amber-500">Note: Leave keys blank to use console logs instead.</span>
+            </p>
             
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-gray-200">Email Address</span>
                 <input
@@ -400,6 +413,40 @@ export default function App() {
               </label>
 
               <label className="block space-y-1">
+                <span className="text-[11px] font-semibold text-cyan-500 uppercase tracking-widest block mt-3 mb-1">EmailJS Configuration (Optional)</span>
+                <span className="text-sm font-medium text-gray-200">Public Key</span>
+                <input
+                  type="text"
+                  value={notifyConfig.publicKey || ""}
+                  onChange={(e) => setNotifyConfig({...notifyConfig, publicKey: e.target.value})}
+                  placeholder="Public Key"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Service ID</span>
+                <input
+                  type="text"
+                  value={notifyConfig.serviceId || ""}
+                  onChange={(e) => setNotifyConfig({...notifyConfig, serviceId: e.target.value})}
+                  placeholder="Service ID"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Template ID</span>
+                <input
+                  type="text"
+                  value={notifyConfig.templateId || ""}
+                  onChange={(e) => setNotifyConfig({...notifyConfig, templateId: e.target.value})}
+                  placeholder="Template ID"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-cyan-400"
+                />
+              </label>
+
+              <label className="block space-y-1 pt-3">
                 <span className="text-sm font-medium text-gray-200">Notify Before</span>
                 <select
                   value={notifyConfig.timeframe}
