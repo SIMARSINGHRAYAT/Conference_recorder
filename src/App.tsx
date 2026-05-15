@@ -76,21 +76,27 @@ export default function App() {
     notifyTime: ""
   });
 
-  const [scholarInput, setScholarInput] = useState("");
-  const [isFetchingScholar, setIsFetchingScholar] = useState(false);
-  const [fetchedScholar, setFetchedScholar] = useState<{name: string, citations: string, hIndex: string, i10Index: string, id: string} | null>(null);
-  const [scholarSubmitted, setScholarSubmitted] = useState<{name: string, citations: string, hIndex: string, i10Index: string, id: string} | null>(() => {
-    const saved = localStorage.getItem("scholar_data");
-    return saved ? JSON.parse(saved) : null;
+  const [linkForm, setLinkForm] = useState({ label: "", url: "" });
+  const [collectionLinks, setCollectionLinks] = useState<{id: number, label: string, url: string}[]>(() => {
+    const saved = localStorage.getItem("collection_links");
+    return saved ? JSON.parse(saved) : [];
   });
+
+  useEffect(() => {
+    localStorage.setItem("conference_entries", JSON.stringify(entries));
+  }, [entries]);
+
+  useEffect(() => {
+    localStorage.setItem("future_conferences", JSON.stringify(futureConfs));
+  }, [futureConfs]);
 
   useEffect(() => {
     localStorage.setItem("app_notifications", JSON.stringify(inAppNotifications));
   }, [inAppNotifications]);
 
   useEffect(() => {
-    localStorage.setItem("scholar_data", JSON.stringify(scholarSubmitted));
-  }, [scholarSubmitted]);
+    localStorage.setItem("collection_links", JSON.stringify(collectionLinks));
+  }, [collectionLinks]);
 
   useEffect(() => {
     // In-app notification checker every minute
@@ -267,46 +273,15 @@ export default function App() {
     doc.save("conference-data.pdf");
   };
 
-  const handleFetchScholar = async () => {
-    if (!scholarInput.trim()) return;
-    setIsFetchingScholar(true);
-    try {
-      const targetUrl = `https://scholar.google.com/citations?user=${scholarInput}&hl=en`;
-      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`);
-      const data = await response.json();
-      
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data.contents, "text/html");
-      
-      const name = doc.querySelector("#gsc_prf_in")?.textContent || "Unknown Name";
-      const tds = doc.querySelectorAll("#gsc_rsb_st td.gsc_rsb_std");
-      
-      const citations = tds[0]?.textContent || "0";
-      const hIndex = tds[2]?.textContent || "0";
-      const i10Index = tds[4]?.textContent || "0";
-
-      setFetchedScholar({ 
-        id: scholarInput, 
-        name,
-        citations,
-        hIndex,
-        i10Index
-      });
-      toast.success("Scholar data fetched successfully!");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to fetch Google Scholar data.");
-    } finally {
-      setIsFetchingScholar(false);
-    }
+  const handleAddLink = () => {
+    if (!linkForm.label.trim() || !linkForm.url.trim()) return;
+    setCollectionLinks(prev => [...prev, { id: Date.now(), label: linkForm.label, url: linkForm.url }]);
+    setLinkForm({ label: "", url: "" });
+    toast.success("Link added successfully!");
   };
 
-  const handleSubmitScholar = () => {
-    if (fetchedScholar) {
-      setScholarSubmitted(fetchedScholar);
-      setFetchedScholar(null);
-      setScholarInput("");
-    }
+  const removeLink = (id: number) => {
+    setCollectionLinks(prev => prev.filter(link => link.id !== id));
   };
 
   if (currentView === "welcome") {
@@ -333,7 +308,7 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-8 font-sans">
+      <main className="min-h-screen bg-gradient-to-br from-indigo-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
@@ -346,7 +321,7 @@ export default function App() {
             </button>
           </header>
           
-          <div className="rounded-2xl border border-white/20 bg-gray-900 shadow-xl p-6 sm:p-8">
+          <div className="rounded-2xl border border-white/20 bg-gray-900/60 backdrop-blur-md shadow-xl p-6 sm:p-8">
             <h2 className="text-2xl font-bold mb-6 text-purple-100">Add Conference for Further Submission</h2>
             <form onSubmit={submitFutureEntry} className="space-y-4">
               <label className="block space-y-1">
@@ -391,7 +366,7 @@ export default function App() {
             </form>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-white/20 bg-black shadow-sm overflow-hidden">
+          <div className="mt-8 rounded-2xl border border-white/20 bg-black/40 shadow-sm overflow-hidden backdrop-blur-sm">
             <div className="px-6 py-4 bg-white/5 border-b border-white/10">
               <h3 className="font-semibold text-lg text-purple-100">Upcoming Submissions</h3>
             </div>
@@ -423,11 +398,11 @@ export default function App() {
   }
 
   return (
-    <main className="relative min-h-screen bg-black px-4 py-8 text-white sm:px-8 font-sans">
+    <main className="relative min-h-screen bg-gradient-to-br from-indigo-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-gray-900 p-6 shadow-xl relative">
+          <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-gray-900/60 backdrop-blur-md p-6 shadow-xl relative">
             <button 
               onClick={() => setShowNotifyModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
@@ -501,7 +476,7 @@ export default function App() {
         
         {/* Left Sidebar Actions */}
         <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
-          <div className="rounded-2xl border border-white/20 bg-black p-4 space-y-3">
+          <div className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 space-y-3">
             <button
               onClick={() => setShowNotifyModal(true)}
               className="w-full flex justify-between items-center rounded-md border border-purple-500/60 bg-purple-500/10 px-4 py-3 text-sm font-medium text-purple-300 transition hover:bg-purple-500/20"
@@ -524,65 +499,54 @@ export default function App() {
             </button>
           </div>
           
-          <div className="rounded-2xl border border-white/20 bg-black p-4 space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-purple-300">Overall Scholar Add</h3>
-            <p className="text-xs text-gray-400">Link your Google Scholar profile ID to fetch real-time citations.</p>
+          <div className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 space-y-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-purple-300">Article Collections</h3>
+            <p className="text-xs text-gray-400">Add links to your profiles (Google Scholar, ORCID, etc.).</p>
             
             <div className="flex flex-col gap-2">
               <input
-                value={scholarInput}
-                onChange={(e) => setScholarInput(e.target.value)}
-                placeholder="Scholar ID (e.g. X6loXjAAAAAJ)"
-                className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                value={linkForm.label}
+                onChange={(e) => setLinkForm({...linkForm, label: e.target.value})}
+                placeholder="Label (e.g. Google Scholar)"
+                className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-purple-400 text-sm"
+              />
+              <input
+                value={linkForm.url}
+                onChange={(e) => setLinkForm({...linkForm, url: e.target.value})}
+                placeholder="URL (e.g. https://scholar.google.com/...)"
+                className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-purple-400 text-sm"
               />
               <button
-                onClick={handleFetchScholar}
-                disabled={!scholarInput || isFetchingScholar}
+                onClick={handleAddLink}
+                disabled={!linkForm.label || !linkForm.url}
                 className="w-full flex justify-center items-center gap-2 rounded-md bg-purple-700 hover:bg-purple-600 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
               >
-                <Search size={14} /> {isFetchingScholar ? "Fetching..." : "Fetch"}
+                <Plus size={14} /> Add Link
               </button>
             </div>
 
-            {fetchedScholar && !scholarSubmitted && (
-              <div className="mt-3 p-3 border border-white/20 rounded-md bg-gray-900 border-l-4 border-l-purple-500">
-                <p className="text-sm font-semibold text-white truncate">{fetchedScholar.name}</p>
-                <p className="text-xs text-gray-300 mb-2">ID Found: {fetchedScholar.id}</p>
-                <button
-                  onClick={handleSubmitScholar}
-                  className="w-full flex justify-center items-center gap-2 rounded-md bg-purple-600 hover:bg-purple-500 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
-                >
-                  <Check size={14} /> Link Account
-                </button>
-              </div>
-            )}
-
-            {scholarSubmitted && (
-              <div className="mt-4 p-4 rounded-xl border border-purple-500/30 bg-purple-500/10 text-center flex flex-col gap-2">
-                <div className="flex justify-between items-center bg-black/50 p-2 rounded-md border border-white/10">
-                  <span className="text-xs text-gray-400">Name</span>
-                  <span className="text-sm font-semibold truncate text-white max-w-[120px]">{scholarSubmitted.name}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                   <div className="bg-black/50 p-2 rounded-md border border-white/10">
-                     <p className="text-[10px] uppercase tracking-wider text-purple-400">Citations</p>
-                     <p className="text-xl font-bold text-white">{scholarSubmitted.citations}</p>
-                   </div>
-                   <div className="bg-black/50 p-2 rounded-md border border-white/10">
-                     <p className="text-[10px] uppercase tracking-wider text-purple-400">h-index</p>
-                     <p className="text-xl font-bold text-white">{scholarSubmitted.hIndex}</p>
-                   </div>
-                   <div className="bg-black/50 p-2 rounded-md border border-white/10 col-span-2">
-                     <p className="text-[10px] uppercase tracking-wider text-purple-400">i10-index</p>
-                     <p className="text-xl font-bold text-white">{scholarSubmitted.i10Index}</p>
-                   </div>
-                </div>
-                <button 
-                  onClick={() => setScholarSubmitted(null)} 
-                  className="text-xs text-red-400 hover:text-red-300 mt-2 transition"
-                >
-                  Unlink Account
-                </button>
+            {collectionLinks.length > 0 && (
+              <div className="mt-4 space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                {collectionLinks.map(link => (
+                  <div key={link.id} className="flex flex-col gap-1 p-2 rounded-md border border-white/10 bg-white/5">
+                    <div className="flex justify-between items-start">
+                      <a 
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer" 
+                        className="text-sm font-medium text-purple-200 hover:text-purple-100 hover:underline truncate"
+                      >
+                        {link.label}
+                      </a>
+                      <button 
+                        onClick={() => removeLink(link.id)} 
+                        className="text-gray-400 hover:text-red-400 transition"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -590,7 +554,7 @@ export default function App() {
 
         {/* Main Content */}
         <div className="flex-1 space-y-6 w-full max-w-full overflow-hidden">
-          <header className="rounded-2xl border border-white/20 bg-black p-6">
+          <header className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">Publication Tracker</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl truncate">Conference Dashboard</h1>
             <p className="mt-2 max-w-2xl text-sm text-gray-300">
@@ -598,7 +562,7 @@ export default function App() {
             </p>
           </header>
 
-          <section className="grid gap-4 rounded-2xl border border-white/20 bg-black p-4 grid-cols-2 lg:grid-cols-5">
+          <section className="grid gap-4 rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 grid-cols-2 lg:grid-cols-5">
             <div>
               <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">Total Papers</p>
               <p className="mt-1 text-2xl sm:text-3xl font-semibold text-white">{counts.total}</p>
@@ -621,7 +585,7 @@ export default function App() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/20 bg-black p-4 shadow-sm sm:p-6">
+          <section className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 shadow-sm sm:p-6">
             <form onSubmit={submitEntry} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <label className="space-y-1">
                 <span className="text-sm font-medium text-gray-200">Conference Name</span>
@@ -782,7 +746,7 @@ export default function App() {
             </form>
           </section>
 
-          <section className="overflow-x-auto rounded-2xl border border-white/20 bg-black shadow-sm">
+          <section className="overflow-x-auto rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm shadow-sm">
             <table className="min-w-full border-collapse text-sm">
               <thead className="bg-white/10 text-left text-white">
                 <tr>
