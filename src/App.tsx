@@ -1,4 +1,4 @@
-﻿import { FormEvent, useMemo, useState, useEffect } from "react";
+import { FormEvent, useMemo, useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Bell, Download, X, Search, Check, Plus, ArrowLeft } from "lucide-react";
@@ -84,9 +84,17 @@ export default function App() {
 
   const [currentUser, setCurrentUser] = useState<string>("");
   const [usernameInput, setUsernameInput] = useState<string>("");
+  const [assignUsernameInput, setAssignUsernameInput] = useState<string>("");
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const getUserKey = (base: string) => currentUser ? `${base}_${currentUser}` : base;
+
+  const handleAssignUsername = () => {
+    const active = assignUsernameInput.trim();
+    if (!active) return;
+    setCurrentUser(active);
+    toast.success(`Data assigned to profile: ${active}`);
+  };
 
   const handleStart = () => {
     const active = usernameInput.trim();
@@ -317,27 +325,33 @@ export default function App() {
 
   if (currentView === "welcome") {
     return (
-      <main className="animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-950 via-purple-900 to-black px-4 font-sans relative overflow-hidden">
+      <main className="animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-950 via-teal-900 to-lime-950 px-4 font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-        <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-purple-500/20 shadow-2xl">
+        <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-teal-500/20 shadow-2xl">
           <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
-            Welcome to <span className="text-purple-400 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-300">Tracker</span>
+            Welcome to <span className="text-teal-400 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-lime-300">Tracker</span>
           </h1>
           <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light">
             Record your publications, manage presentations, and monitor your scholar citations seamlessly through our professional dashboard.
           </p>
           
           <div className="mt-8 mx-auto max-w-sm space-y-4">
+            <div className="bg-black/50 p-4 border border-teal-500/30 rounded-xl text-left">
+              <p className="text-xs text-teal-300 font-medium uppercase tracking-wider mb-2">Notice</p>
+              <p className="text-sm text-gray-300">
+                To access your <span className="text-teal-400 font-semibold">Previous Data</span>, leave the username entirely blank and click Start to use the Default profile. Typing a new name creates a completely fresh dashboard.
+              </p>
+            </div>
             <input
               type="text"
               value={usernameInput}
               onChange={(e) => setUsernameInput(e.target.value)}
-              placeholder="Enter Username (blank for Default)"
-              className="w-full rounded-md border border-white/30 bg-black/50 px-4 py-3 text-center text-white outline-none transition focus:border-purple-400 text-lg placeholder:text-gray-500"
+              placeholder="Enter Username (Leave blank for Old Data)"
+              className="w-full rounded-md border border-white/30 bg-black/50 px-4 py-3 text-center text-white outline-none transition focus:border-teal-400 text-lg placeholder:text-gray-500"
             />
             <button 
               onClick={handleStart}
-              className="w-full rounded-full bg-purple-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all hover:scale-105 hover:bg-purple-500 cursor-pointer border border-purple-400 text-center uppercase tracking-widest"
+              className="w-full rounded-full bg-teal-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all hover:scale-105 hover:bg-teal-500 cursor-pointer border border-teal-400 text-center uppercase tracking-widest"
             >
               Get Started
             </button>
@@ -349,13 +363,13 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="animate-bg min-h-screen bg-gradient-to-br from-indigo-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
+      <main className="animate-bg min-h-screen bg-gradient-to-br from-teal-950 to-lime-950 px-4 py-8 text-white sm:px-8 font-sans">
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
             <button 
               onClick={() => setCurrentView("dashboard")}
-              className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition"
+              className="flex items-center gap-2 text-teal-400 hover:text-teal-300 transition"
             >
               <ArrowLeft size={20} />
               Back to Dashboard
@@ -363,7 +377,7 @@ export default function App() {
           </header>
           
           <div className="rounded-2xl border border-white/20 bg-gray-900/60 backdrop-blur-md shadow-xl p-6 sm:p-8">
-            <h2 className="text-2xl font-bold mb-6 text-purple-100">Add Conference for Further Submission</h2>
+            <h2 className="text-2xl font-bold mb-6 text-teal-100">Add Conference for Further Submission</h2>
             <form onSubmit={submitFutureEntry} className="space-y-4">
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-gray-200">Conference Name</span>
@@ -371,7 +385,7 @@ export default function App() {
                   required
                   value={futureForm.conferenceName}
                   onChange={(e) => setFutureForm(prev => ({...prev, conferenceName: e.target.value}))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   placeholder="e.g. CVPR 2028"
                 />
               </label>
@@ -383,7 +397,7 @@ export default function App() {
                   type="date"
                   value={futureForm.submissionDeadline}
                   onChange={(e) => setFutureForm(prev => ({...prev, submissionDeadline: e.target.value}))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
@@ -392,7 +406,7 @@ export default function App() {
                 <textarea
                   value={futureForm.notes}
                   onChange={(e) => setFutureForm(prev => ({...prev, notes: e.target.value}))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   placeholder="Additional details about the tracks, requirements, etc."
                   rows={3}
                 />
@@ -400,7 +414,7 @@ export default function App() {
 
               <button
                 type="submit"
-                className="w-full sm:w-auto rounded-md bg-purple-700 hover:bg-purple-600 px-6 py-2 text-sm font-semibold text-white transition"
+                className="w-full sm:w-auto rounded-md bg-teal-700 hover:bg-teal-600 px-6 py-2 text-sm font-semibold text-white transition"
               >
                 Save Timeline
               </button>
@@ -409,7 +423,7 @@ export default function App() {
 
           <div className="mt-8 rounded-2xl border border-white/20 bg-black/40 shadow-sm overflow-hidden backdrop-blur-sm">
             <div className="px-6 py-4 bg-white/5 border-b border-white/10">
-              <h3 className="font-semibold text-lg text-purple-100">Upcoming Submissions</h3>
+              <h3 className="font-semibold text-lg text-teal-100">Upcoming Submissions</h3>
             </div>
             {futureConfs.length === 0 ? (
               <div className="p-6 text-center text-gray-400">No upcoming conferences planned.</div>
@@ -419,7 +433,7 @@ export default function App() {
                   <div key={conf.id} className="p-6 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
                     <div>
                       <h4 className="font-bold text-lg text-white">{conf.conferenceName}</h4>
-                      <p className="text-sm text-purple-300">Deadline: {conf.submissionDeadline}</p>
+                      <p className="text-sm text-teal-300">Deadline: {conf.submissionDeadline}</p>
                       {conf.notes && <p className="text-sm text-gray-400 mt-2">{conf.notes}</p>}
                     </div>
                     <button
@@ -439,7 +453,7 @@ export default function App() {
   }
 
   return (
-    <main className="animate-bg relative min-h-screen bg-gradient-to-br from-indigo-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
+    <main className="animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-lime-950 px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -461,7 +475,7 @@ export default function App() {
                 <select
                   value={notifyForm.conferenceId}
                   onChange={(e) => setNotifyForm({...notifyForm, conferenceId: e.target.value})}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 >
                   <option value="" disabled>Select a conference</option>
                   {entries.map(conf => (
@@ -477,7 +491,7 @@ export default function App() {
                   value={notifyForm.message}
                   onChange={(e) => setNotifyForm({...notifyForm, message: e.target.value})}
                   placeholder="e.g., Prepare slides for presentation"
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   rows={2}
                 />
               </label>
@@ -488,7 +502,7 @@ export default function App() {
                   type="date"
                   value={notifyForm.notifyDate}
                   onChange={(e) => setNotifyForm({...notifyForm, notifyDate: e.target.value})}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
@@ -498,13 +512,13 @@ export default function App() {
                   type="time"
                   value={notifyForm.notifyTime}
                   onChange={(e) => setNotifyForm({...notifyForm, notifyTime: e.target.value})}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
               <button
                 onClick={saveNotificationSettings}
-                className="w-full mt-4 rounded-md bg-purple-700 hover:bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition"
+                className="w-full mt-4 rounded-md bg-teal-700 hover:bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition"
               >
                 Save Settings
               </button>
@@ -520,7 +534,7 @@ export default function App() {
           <div className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 space-y-3">
             <button
               onClick={() => setShowNotifyModal(true)}
-              className="w-full flex justify-between items-center rounded-md border border-purple-500/60 bg-purple-500/10 px-4 py-3 text-sm font-medium text-purple-300 transition hover:bg-purple-500/20"
+              className="w-full flex justify-between items-center rounded-md border border-teal-500/60 bg-teal-500/10 px-4 py-3 text-sm font-medium text-teal-300 transition hover:bg-teal-500/20"
             >
               <span className="flex gap-2 items-center"><Bell size={16} /> Notify</span>
             </button>
@@ -541,7 +555,7 @@ export default function App() {
           </div>
           
           <div className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-purple-300">Article Collections</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-teal-300">Article Collections</h3>
             <p className="text-xs text-gray-400">Add links to your profiles (Google Scholar, ORCID, etc.).</p>
             
             <div className="flex flex-col gap-2">
@@ -549,18 +563,18 @@ export default function App() {
                 value={linkForm.label}
                 onChange={(e) => setLinkForm({...linkForm, label: e.target.value})}
                 placeholder="Label (e.g. Google Scholar)"
-                className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-purple-400 text-sm"
+                className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-teal-400 text-sm"
               />
               <input
                 value={linkForm.url}
                 onChange={(e) => setLinkForm({...linkForm, url: e.target.value})}
                 placeholder="URL (e.g. https://scholar.google.com/...)"
-                className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-purple-400 text-sm"
+                className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-teal-400 text-sm"
               />
               <button
                 onClick={handleAddLink}
                 disabled={!linkForm.label || !linkForm.url}
-                className="w-full flex justify-center items-center gap-2 rounded-md bg-purple-700 hover:bg-purple-600 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+                className="w-full flex justify-center items-center gap-2 rounded-md bg-teal-700 hover:bg-teal-600 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
               >
                 <Plus size={14} /> Add Link
               </button>
@@ -575,7 +589,7 @@ export default function App() {
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer" 
-                        className="text-sm font-medium text-purple-200 hover:text-purple-100 hover:underline truncate"
+                        className="text-sm font-medium text-teal-200 hover:text-teal-100 hover:underline truncate"
                       >
                         {link.label}
                       </a>
@@ -597,21 +611,48 @@ export default function App() {
         <div className="flex-1 space-y-6 w-full max-w-full overflow-hidden">
           <header className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-6 flex justify-between items-start">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">Publication Tracker</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-300">Publication Tracker</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl truncate">Conference Dashboard</h1>
               <p className="mt-2 max-w-2xl text-sm text-gray-300">
                 Add your conference papers, track acceptance and presentations, and monitor category-wise publication counts.
               </p>
             </div>
-            {currentUser && (
+            {currentUser ? (
               <div className="flex flex-col items-end text-sm">
                 <span className="text-gray-400">Logged in as</span>
-                <span className="font-semibold text-purple-300 px-3 py-1 bg-purple-900/30 rounded-full border border-purple-500/30 mt-1">
+                <span className="font-semibold text-teal-300 px-3 py-1 bg-teal-900/30 rounded-full border border-teal-500/30 mt-1">
                   {currentUser}
                 </span>
                 <button 
                   onClick={() => { setIsDataLoaded(false); setCurrentView("welcome"); }}
-                  className="text-xs text-purple-400 hover:text-purple-300 mt-2"
+                  className="text-xs text-teal-400 hover:text-teal-300 mt-2"
+                >
+                  Switch User
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-end text-sm text-right">
+                <span className="text-lime-400 font-semibold mb-1">Unassigned Default Profile</span>
+                <span className="text-gray-400 text-xs mb-2 max-w-[200px]">Secure your legacy data by assigning a username.</span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={assignUsernameInput}
+                    onChange={(e) => setAssignUsernameInput(e.target.value)}
+                    placeholder="Enter new username"
+                    className="rounded-md border border-white/30 bg-black/50 px-2 py-1 text-white outline-none focus:border-teal-400 text-xs"
+                  />
+                  <button 
+                    onClick={handleAssignUsername}
+                    disabled={!assignUsernameInput.trim()}
+                    className="rounded-md bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-500 transition disabled:opacity-50"
+                  >
+                    Assign
+                  </button>
+                </div>
+                <button 
+                  onClick={() => { setIsDataLoaded(false); setCurrentView("welcome"); }}
+                  className="text-xs text-teal-400 hover:text-teal-300 mt-3"
                 >
                   Switch User
                 </button>
@@ -626,7 +667,7 @@ export default function App() {
             </div>
             <div>
               <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">IEEE</p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-purple-300">{counts.ieee}</p>
+              <p className="mt-1 text-xl sm:text-2xl font-semibold text-teal-300">{counts.ieee}</p>
             </div>
             <div>
               <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">Springers</p>
@@ -650,7 +691,7 @@ export default function App() {
                   required
                   value={form.conferenceName}
                   onChange={(event) => setForm((previous) => ({ ...previous, conferenceName: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   placeholder="e.g. ICML 2027"
                 />
               </label>
@@ -662,7 +703,7 @@ export default function App() {
                   type="date"
                   value={form.conferenceDate}
                   onChange={(event) => setForm((previous) => ({ ...previous, conferenceDate: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
@@ -671,7 +712,7 @@ export default function App() {
                 <select
                   value={form.status}
                   onChange={(event) => setForm((previous) => ({ ...previous, status: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 >
                   {statuses.map((status) => (
                     <option key={status} value={status}>
@@ -693,7 +734,7 @@ export default function App() {
                           isRegistered: event.target.checked,
                         }))
                       }
-                      className="h-4 w-4 rounded border-white/30 bg-black text-purple-400 accent-purple-600"
+                      className="h-4 w-4 rounded border-white/30 bg-black text-teal-400 accent-teal-600"
                     />
                     <span className="text-sm font-medium text-gray-200">Registered</span>
                   </div>
@@ -708,7 +749,7 @@ export default function App() {
                       type="date"
                       value={form.presentationDate || ""}
                       onChange={(event) => setForm((previous) => ({ ...previous, presentationDate: event.target.value }))}
-                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                     />
                   </label>
                   <label className="space-y-1">
@@ -717,7 +758,7 @@ export default function App() {
                       type="time"
                       value={form.presentationTime || ""}
                       onChange={(event) => setForm((previous) => ({ ...previous, presentationTime: event.target.value }))}
-                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                     />
                   </label>
                 </>
@@ -735,7 +776,7 @@ export default function App() {
                       papersSubmitted: event.target.value ? Number(event.target.value) : "",
                     }))
                   }
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   placeholder="e.g. 1"
                 />
               </label>
@@ -746,7 +787,7 @@ export default function App() {
                   type="date"
                   value={form.publicationDate}
                   onChange={(event) => setForm((previous) => ({ ...previous, publicationDate: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
@@ -761,7 +802,7 @@ export default function App() {
                       expectedPublicationMonth: event.target.value,
                     }))
                   }
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
@@ -770,7 +811,7 @@ export default function App() {
                 <select
                   value={form.conferenceCategory}
                   onChange={(event) => setForm((previous) => ({ ...previous, conferenceCategory: event.target.value }))}
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-purple-400"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 >
                   {categories.map((category) => (
                     <option key={category} value={category}>
@@ -783,7 +824,7 @@ export default function App() {
               <div className="flex items-end gap-2 xl:col-span-2">
                 <button
                   type="submit"
-                  className="w-full rounded-md bg-purple-700 hover:bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
+                  className="w-full rounded-md bg-teal-700 hover:bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
                 >
                   {editingId !== null ? "Update Entry" : "Add Entry"}
                 </button>
@@ -863,7 +904,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => editEntry(entry)}
-                          className="rounded-md border border-purple-500/60 px-3 py-1.5 text-xs font-medium text-purple-200 transition hover:bg-purple-500/20 cursor-pointer"
+                          className="rounded-md border border-teal-500/60 px-3 py-1.5 text-xs font-medium text-teal-200 transition hover:bg-teal-500/20 cursor-pointer"
                           >
                             Edit
                           </button>
