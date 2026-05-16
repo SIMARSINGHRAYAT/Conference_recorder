@@ -10,7 +10,7 @@ type ConferenceEntry = {
   conferenceName: string;
   conferenceDate: string;
   status: string;
-  isRegistered?: boolean;
+  isRegisteteal?: boolean;
   presentationDate?: string;
   presentationTime?: string;
   publicationDate: string;
@@ -26,7 +26,7 @@ const emptyForm: ConferenceForm = {
   conferenceName: "",
   conferenceDate: "",
   status: "Accepted",
-  isRegistered: false,
+  isRegisteteal: false,
   presentationDate: "",
   presentationTime: "",
   publicationDate: "",
@@ -180,7 +180,7 @@ export default function App() {
 
   const saveNotificationSettings = () => {
     if (!notifyForm.conferenceId || !notifyForm.notifyDate || !notifyForm.notifyTime) {
-      toast.error("Please fill all required fields");
+      toast.error("Please fill all requiteal fields");
       return;
     }
     
@@ -260,7 +260,7 @@ export default function App() {
     const sumPapers = (condition: (entry: ConferenceEntry) => boolean) =>
       entries
         .filter(condition)
-        .reduce((sum, entry) => sum + (Number(entry.papersSubmitted) || 0), 0);
+        .tealuce((sum, entry) => sum + (Number(entry.papersSubmitted) || 0), 0);
 
     return {
       total: sumPapers(() => true),
@@ -279,8 +279,8 @@ export default function App() {
   };
 
   const statusClassName = (status: string, publicationDate: string) => {
-    if (publicationDate) return "bg-blue-600 text-white ring-1 ring-blue-500";
-    if (status === "Presented") return "bg-green-500 text-white ring-1 ring-green-400";
+    if (publicationDate) return "bg-teal-600 text-white ring-1 ring-teal-500";
+    if (status === "Presented") return "bg-teal-500 text-white ring-1 ring-teal-400";
     return "bg-amber-100 text-black ring-1 ring-amber-200";
   };
 
@@ -325,11 +325,11 @@ export default function App() {
 
   if (currentView === "welcome") {
     return (
-      <main className="animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-950 via-teal-900 to-purple-900 px-4 font-sans relative overflow-hidden">
+      <main className="animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-950 via-teal-900 to-teal-900 px-4 font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-teal-500/20 shadow-2xl">
           <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
-            Welcome to <span className="text-teal-400 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-purple-300">Tracker</span>
+            Welcome to <span className="text-teal-400 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-teal-300">Tracker</span>
           </h1>
           <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light">
             Record your publications, manage presentations, and monitor your scholar citations seamlessly through our professional dashboard.
@@ -351,7 +351,7 @@ export default function App() {
             />
             <button 
               onClick={handleStart}
-              className="w-full rounded-full bg-teal-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all hover:scale-105 hover:bg-teal-500 cursor-pointer border border-teal-400 text-center uppercase tracking-widest"
+              className="w-full rounded-full bg-teal-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(20,184,166,0.4)] transition-all hover:scale-105 hover:bg-teal-500 cursor-pointer border border-teal-400 text-center uppercase tracking-widest"
             >
               Get Started
             </button>
@@ -363,7 +363,7 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="animate-bg min-h-screen bg-gradient-to-br from-teal-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
+      <main className="animate-bg min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
@@ -382,7 +382,7 @@ export default function App() {
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-gray-200">Conference Name</span>
                 <input
-                  required
+                  requiteal
                   value={futureForm.conferenceName}
                   onChange={(e) => setFutureForm(prev => ({...prev, conferenceName: e.target.value}))}
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
@@ -393,7 +393,7 @@ export default function App() {
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-gray-200">Submission Deadline</span>
                 <input
-                  required
+                  requiteal
                   type="date"
                   value={futureForm.submissionDeadline}
                   onChange={(e) => setFutureForm(prev => ({...prev, submissionDeadline: e.target.value}))}
@@ -438,7 +438,7 @@ export default function App() {
                     </div>
                     <button
                       onClick={() => removeFutureEntry(conf.id)}
-                      className="text-red-400 hover:text-red-300 text-sm font-medium transition cursor-pointer"
+                      className="text-teal-400 hover:text-teal-300 text-sm font-medium transition cursor-pointer"
                     >
                       Delete
                     </button>
@@ -453,7 +453,7 @@ export default function App() {
   }
 
   return (
-    <main className="animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
+    <main className="animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -595,7 +595,7 @@ export default function App() {
                       </a>
                       <button 
                         onClick={() => removeLink(link.id)} 
-                        className="text-gray-400 hover:text-red-400 transition"
+                        className="text-gray-400 hover:text-teal-400 transition"
                       >
                         <X size={14} />
                       </button>
@@ -632,7 +632,7 @@ export default function App() {
               </div>
             ) : (
               <div className="flex flex-col items-end text-sm text-right">
-                <span className="text-purple-400 font-semibold mb-1">Unassigned Default Profile</span>
+                <span className="text-teal-400 font-semibold mb-1">Unassigned Default Profile</span>
                 <span className="text-gray-400 text-xs mb-2 max-w-[200px]">Secure your legacy data by assigning a username.</span>
                 <div className="flex gap-2">
                   <input
@@ -688,7 +688,7 @@ export default function App() {
               <label className="space-y-1">
                 <span className="text-sm font-medium text-gray-200">Conference Name</span>
                 <input
-                  required
+                  requiteal
                   value={form.conferenceName}
                   onChange={(event) => setForm((previous) => ({ ...previous, conferenceName: event.target.value }))}
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
@@ -699,7 +699,7 @@ export default function App() {
               <label className="space-y-1">
                 <span className="text-sm font-medium text-gray-200">Conference Date</span>
                 <input
-                  required
+                  requiteal
                   type="date"
                   value={form.conferenceDate}
                   onChange={(event) => setForm((previous) => ({ ...previous, conferenceDate: event.target.value }))}
@@ -727,21 +727,21 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={form.isRegistered || false}
+                      checked={form.isRegisteteal || false}
                       onChange={(event) =>
                         setForm((previous) => ({
                           ...previous,
-                          isRegistered: event.target.checked,
+                          isRegisteteal: event.target.checked,
                         }))
                       }
                       className="h-4 w-4 rounded border-white/30 bg-black text-teal-400 accent-teal-600"
                     />
-                    <span className="text-sm font-medium text-gray-200">Registered</span>
+                    <span className="text-sm font-medium text-gray-200">Registeteal</span>
                   </div>
                 </label>
               )}
 
-              {form.status === "Accepted" && form.isRegistered && (
+              {form.status === "Accepted" && form.isRegisteteal && (
                 <>
                   <label className="space-y-1">
                     <span className="text-sm font-medium text-gray-200">Presentation Date</span>
@@ -883,12 +883,12 @@ export default function App() {
                             </span>
                             {entry.status === "Accepted" && (
                               <div 
-                                className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 shrink-0 ${entry.isRegistered ? 'bg-green-500' : 'bg-red-500'}`} 
-                                title={entry.isRegistered ? "Registered" : "Not Registered"} 
+                                className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 shrink-0 ${entry.isRegisteteal ? 'bg-teal-500' : 'bg-teal-500'}`} 
+                                title={entry.isRegisteteal ? "Registeteal" : "Not Registeteal"} 
                               />
                             )}
                           </div>
-                          {entry.status === "Accepted" && entry.isRegistered && (entry.presentationDate || entry.presentationTime) && (
+                          {entry.status === "Accepted" && entry.isRegisteteal && (entry.presentationDate || entry.presentationTime) && (
                             <div className="text-[10px] text-gray-400 pl-1 whitespace-nowrap overflow-hidden text-ellipsis w-full">
                               {entry.presentationDate && <span>{entry.presentationDate}</span>}
                               {entry.presentationDate && entry.presentationTime && <span> at </span>}
@@ -911,7 +911,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => removeEntry(entry.id)}
-                            className="rounded-md border border-red-500/60 px-3 py-1.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20 cursor-pointer"
+                            className="rounded-md border border-teal-500/60 px-3 py-1.5 text-xs font-medium text-teal-200 transition hover:bg-teal-500/20 cursor-pointer"
                           >
                             Delete
                           </button>
