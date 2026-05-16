@@ -325,11 +325,11 @@ export default function App() {
 
   if (currentView === "welcome") {
     return (
-      <main className="animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-950 via-teal-900 to-lime-950 px-4 font-sans relative overflow-hidden">
+      <main className="animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-950 via-teal-900 to-purple-900 px-4 font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-teal-500/20 shadow-2xl">
           <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
-            Welcome to <span className="text-teal-400 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-lime-300">Tracker</span>
+            Welcome to <span className="text-teal-400 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-purple-300">Tracker</span>
           </h1>
           <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light">
             Record your publications, manage presentations, and monitor your scholar citations seamlessly through our professional dashboard.
@@ -363,7 +363,7 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="animate-bg min-h-screen bg-gradient-to-br from-teal-950 to-lime-950 px-4 py-8 text-white sm:px-8 font-sans">
+      <main className="animate-bg min-h-screen bg-gradient-to-br from-teal-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
@@ -453,7 +453,7 @@ export default function App() {
   }
 
   return (
-    <main className="animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-lime-950 px-4 py-8 text-white sm:px-8 font-sans">
+    <main className="animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -632,7 +632,7 @@ export default function App() {
               </div>
             ) : (
               <div className="flex flex-col items-end text-sm text-right">
-                <span className="text-lime-400 font-semibold mb-1">Unassigned Default Profile</span>
+                <span className="text-purple-400 font-semibold mb-1">Unassigned Default Profile</span>
                 <span className="text-gray-400 text-xs mb-2 max-w-[200px]">Secure your legacy data by assigning a username.</span>
                 <div className="flex gap-2">
                   <input
