@@ -82,21 +82,52 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  useEffect(() => {
-    localStorage.setItem("conference_entries", JSON.stringify(entries));
-  }, [entries]);
+  const [currentUser, setCurrentUser] = useState<string>("");
+  const [usernameInput, setUsernameInput] = useState<string>("");
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const getUserKey = (base: string) => currentUser ? `${base}_${currentUser}` : base;
+
+  const handleStart = () => {
+    const active = usernameInput.trim();
+    setCurrentUser(active);
+    const suffix = active ? `_${active}` : "";
+    
+    const e = localStorage.getItem(`conference_entries${suffix}`);
+    setEntries(e ? JSON.parse(e) : []);
+    
+    const f = localStorage.getItem(`future_conferences${suffix}`);
+    setFutureConfs(f ? JSON.parse(f) : []);
+
+    const n = localStorage.getItem(`app_notifications${suffix}`);
+    setInAppNotifications(n ? JSON.parse(n) : []);
+
+    const c = localStorage.getItem(`collection_links${suffix}`);
+    setCollectionLinks(c ? JSON.parse(c) : []);
+
+    setIsDataLoaded(true);
+    setCurrentView("dashboard");
+  };
 
   useEffect(() => {
-    localStorage.setItem("future_conferences", JSON.stringify(futureConfs));
-  }, [futureConfs]);
+    if (!isDataLoaded) return;
+    localStorage.setItem(getUserKey("conference_entries"), JSON.stringify(entries));
+  }, [entries, currentUser, isDataLoaded]);
 
   useEffect(() => {
-    localStorage.setItem("app_notifications", JSON.stringify(inAppNotifications));
-  }, [inAppNotifications]);
+    if (!isDataLoaded) return;
+    localStorage.setItem(getUserKey("future_conferences"), JSON.stringify(futureConfs));
+  }, [futureConfs, currentUser, isDataLoaded]);
 
   useEffect(() => {
-    localStorage.setItem("collection_links", JSON.stringify(collectionLinks));
-  }, [collectionLinks]);
+    if (!isDataLoaded) return;
+    localStorage.setItem(getUserKey("app_notifications"), JSON.stringify(inAppNotifications));
+  }, [inAppNotifications, currentUser, isDataLoaded]);
+
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    localStorage.setItem(getUserKey("collection_links"), JSON.stringify(collectionLinks));
+  }, [collectionLinks, currentUser, isDataLoaded]);
 
   useEffect(() => {
     // In-app notification checker every minute
@@ -286,7 +317,7 @@ export default function App() {
 
   if (currentView === "welcome") {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-950 via-purple-900 to-black px-4 font-sans relative overflow-hidden">
+      <main className="animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-950 via-purple-900 to-black px-4 font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-purple-500/20 shadow-2xl">
           <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
@@ -295,12 +326,22 @@ export default function App() {
           <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light">
             Record your publications, manage presentations, and monitor your scholar citations seamlessly through our professional dashboard.
           </p>
-          <button 
-            onClick={() => setCurrentView("dashboard")}
-            className="mt-10 rounded-full bg-purple-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all hover:scale-105 hover:bg-purple-500 cursor-pointer border border-purple-400 text-center inline-block uppercase tracking-widest"
-          >
-            Get Started
-          </button>
+          
+          <div className="mt-8 mx-auto max-w-sm space-y-4">
+            <input
+              type="text"
+              value={usernameInput}
+              onChange={(e) => setUsernameInput(e.target.value)}
+              placeholder="Enter Username (blank for Default)"
+              className="w-full rounded-md border border-white/30 bg-black/50 px-4 py-3 text-center text-white outline-none transition focus:border-purple-400 text-lg placeholder:text-gray-500"
+            />
+            <button 
+              onClick={handleStart}
+              className="w-full rounded-full bg-purple-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(147,51,234,0.4)] transition-all hover:scale-105 hover:bg-purple-500 cursor-pointer border border-purple-400 text-center uppercase tracking-widest"
+            >
+              Get Started
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -308,7 +349,7 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-indigo-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
+      <main className="animate-bg min-h-screen bg-gradient-to-br from-indigo-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
@@ -398,7 +439,7 @@ export default function App() {
   }
 
   return (
-    <main className="relative min-h-screen bg-gradient-to-br from-indigo-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
+    <main className="animate-bg relative min-h-screen bg-gradient-to-br from-indigo-950 to-purple-900 px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -554,12 +595,28 @@ export default function App() {
 
         {/* Main Content */}
         <div className="flex-1 space-y-6 w-full max-w-full overflow-hidden">
-          <header className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">Publication Tracker</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl truncate">Conference Dashboard</h1>
-            <p className="mt-2 max-w-2xl text-sm text-gray-300">
-              Add your conference papers, track acceptance and presentations, and monitor category-wise publication counts.
-            </p>
+          <header className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-6 flex justify-between items-start">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-300">Publication Tracker</p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl truncate">Conference Dashboard</h1>
+              <p className="mt-2 max-w-2xl text-sm text-gray-300">
+                Add your conference papers, track acceptance and presentations, and monitor category-wise publication counts.
+              </p>
+            </div>
+            {currentUser && (
+              <div className="flex flex-col items-end text-sm">
+                <span className="text-gray-400">Logged in as</span>
+                <span className="font-semibold text-purple-300 px-3 py-1 bg-purple-900/30 rounded-full border border-purple-500/30 mt-1">
+                  {currentUser}
+                </span>
+                <button 
+                  onClick={() => { setIsDataLoaded(false); setCurrentView("welcome"); }}
+                  className="text-xs text-purple-400 hover:text-purple-300 mt-2"
+                >
+                  Switch User
+                </button>
+              </div>
+            )}
           </header>
 
           <section className="grid gap-4 rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 grid-cols-2 lg:grid-cols-5">
