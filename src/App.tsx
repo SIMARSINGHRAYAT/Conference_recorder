@@ -132,6 +132,239 @@ export default function App() {
     setCurrentView("dashboard");
   };
 
+  const handleLoadSampleData = () => {
+    const sampleData = [
+      {
+        id: 1,
+        conferenceName: "ICCS-2025",
+        conferenceDate: "2025-09-25",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "CRC",
+        papersSubmitted: 2,
+      },
+      {
+        id: 2,
+        conferenceName: "ICDPN-2025",
+        conferenceDate: "2025-10-31",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 1,
+      },
+      {
+        id: 3,
+        conferenceName: "SMART-2025",
+        conferenceDate: "2025-11-14",
+        status: "Published",
+        publicationDate: "2026-02-23",
+        expectedPublicationMonth: "2026-02",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 2,
+      },
+      {
+        id: 4,
+        conferenceName: "ICCCA-2025",
+        conferenceDate: "2025-11-28",
+        status: "Published",
+        publicationDate: "2026-01-19",
+        expectedPublicationMonth: "2026-01",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 2,
+      },
+      {
+        id: 5,
+        conferenceName: "ICTCON-2025",
+        conferenceDate: "2025-12-02",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 2,
+      },
+      {
+        id: 6,
+        conferenceName: "ICSCAI-2025",
+        conferenceDate: "2025-12-12",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 1,
+      },
+      {
+        id: 7,
+        conferenceName: "MVAI-2026",
+        conferenceDate: "2025-12-20",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 2,
+      },
+      {
+        id: 8,
+        conferenceName: "ICADS-2026",
+        conferenceDate: "2026-02-12",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 2,
+      },
+      {
+        id: 9,
+        conferenceName: "ICSSCC-2026",
+        conferenceDate: "2026-03-13",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 1,
+      },
+      {
+        id: 10,
+        conferenceName: "COMSIA-2026",
+        conferenceDate: "2026-03-20",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 1,
+      },
+      {
+        id: 11,
+        conferenceName: "WCCST-2026",
+        conferenceDate: "2026-03-26",
+        status: "Published",
+        publicationDate: "2026-05-06",
+        expectedPublicationMonth: "2026-05",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 1,
+      },
+      {
+        id: 12,
+        conferenceName: "AITECMI-2026",
+        conferenceDate: "2026-04-09",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 4,
+      },
+      {
+        id: 13,
+        conferenceName: "ICISESSC-2026",
+        conferenceDate: "2026-04-18",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 1,
+      },
+      {
+        id: 14,
+        conferenceName: "DICCT-2026",
+        conferenceDate: "2026-04-24",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 1,
+      },
+      {
+        id: 15,
+        conferenceName: "AICCONS-2026",
+        conferenceDate: "2026-04-28",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 1,
+      },
+      {
+        id: 16,
+        conferenceName: "ICPCSN-2026",
+        conferenceDate: "2026-05-06",
+        status: "Presented",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 2,
+      },
+      {
+        id: 17,
+        conferenceName: "ICDCA-2026",
+        conferenceDate: "2026-06-05",
+        status: "Accepted",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 1,
+      },
+      {
+        id: 18,
+        conferenceName: "WAMS-2026",
+        conferenceDate: "2026-06-10",
+        status: "Accepted",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 2,
+      },
+      {
+        id: 19,
+        conferenceName: "ICDAM",
+        conferenceDate: "2026-06-12",
+        status: "Accepted",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 3,
+      },
+      {
+        id: 20,
+        conferenceName: "ICIVC-2026",
+        conferenceDate: "2026-06-12",
+        status: "Accepted",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 1,
+      },
+      {
+        id: 21,
+        conferenceName: "NETCRYPT-2026",
+        conferenceDate: "2026-08-08",
+        status: "Accepted",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "IEEE",
+        papersSubmitted: 3,
+      },
+      {
+        id: 22,
+        conferenceName: "ICDPN-2026",
+        conferenceDate: "2026-09-25",
+        status: "Accepted",
+        publicationDate: "",
+        expectedPublicationMonth: "",
+        conferenceCategory: "Springers",
+        papersSubmitted: 1,
+      },
+    ];
+
+    localStorage.setItem("conference_entries_SIMAR", JSON.stringify(sampleData));
+    localStorage.setItem("future_conferences_SIMAR", JSON.stringify([]));
+    localStorage.setItem("app_notifications_SIMAR", JSON.stringify([]));
+    localStorage.setItem("collection_links_SIMAR", JSON.stringify([]));
+
+    setUsernameInput("SIMAR");
+    toast.success("Sample data loaded for SIMAR! Click 'Get Started' to view.");
+  };
+
   useEffect(() => {
     if (!isDataLoaded) return;
     localStorage.setItem(
@@ -442,6 +675,12 @@ export default function App() {
               className="w-full rounded-full bg-teal-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(20,184,166,0.4)] transition-all hover:scale-105 hover:bg-teal-500 cursor-pointer border border-teal-400 text-center uppercase tracking-widest"
             >
               Get Started
+            </button>
+            <button
+              onClick={handleLoadSampleData}
+              className="w-full rounded-full bg-amber-600 px-10 py-3 text-sm font-bold text-white shadow-[0_0_20px_rgba(217,119,6,0.4)] transition-all hover:scale-105 hover:bg-amber-500 cursor-pointer border border-amber-400 text-center uppercase tracking-widest"
+            >
+              Load SIMAR Sample Data
             </button>
           </div>
         </div>
