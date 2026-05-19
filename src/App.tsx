@@ -1,7 +1,15 @@
 import { FormEvent, useMemo, useState, useEffect } from "react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Bell, Download, X, Search, Check, Plus, ArrowLeft } from "lucide-react";
+import {
+  Bell,
+  Download,
+  X,
+  Search,
+  Check,
+  Plus,
+  ArrowLeft,
+} from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -61,23 +69,29 @@ export default function App() {
     const saved = localStorage.getItem("future_conferences");
     return saved ? JSON.parse(saved) : [];
   });
-  const [futureForm, setFutureForm] = useState({ conferenceName: "", submissionDeadline: "", notes: "" });
+  const [futureForm, setFutureForm] = useState({
+    conferenceName: "",
+    submissionDeadline: "",
+    notes: "",
+  });
 
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [inAppNotifications, setInAppNotifications] = useState<any[]>(() => {
     const saved = localStorage.getItem("app_notifications");
     return saved ? JSON.parse(saved) : [];
   });
-  
+
   const [notifyForm, setNotifyForm] = useState({
     conferenceId: "",
     message: "",
     notifyDate: "",
-    notifyTime: ""
+    notifyTime: "",
   });
 
   const [linkForm, setLinkForm] = useState({ label: "", url: "" });
-  const [collectionLinks, setCollectionLinks] = useState<{id: number, label: string, url: string}[]>(() => {
+  const [collectionLinks, setCollectionLinks] = useState<
+    { id: number; label: string; url: string }[]
+  >(() => {
     const saved = localStorage.getItem("collection_links");
     return saved ? JSON.parse(saved) : [];
   });
@@ -87,7 +101,8 @@ export default function App() {
   const [assignUsernameInput, setAssignUsernameInput] = useState<string>("");
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  const getUserKey = (base: string) => currentUser ? `${base}_${currentUser}` : base;
+  const getUserKey = (base: string) =>
+    currentUser ? `${base}_${currentUser}` : base;
 
   const handleAssignUsername = () => {
     const active = assignUsernameInput.trim();
@@ -100,10 +115,10 @@ export default function App() {
     const active = usernameInput.trim();
     setCurrentUser(active);
     const suffix = active ? `_${active}` : "";
-    
+
     const e = localStorage.getItem(`conference_entries${suffix}`);
     setEntries(e ? JSON.parse(e) : []);
-    
+
     const f = localStorage.getItem(`future_conferences${suffix}`);
     setFutureConfs(f ? JSON.parse(f) : []);
 
@@ -119,22 +134,34 @@ export default function App() {
 
   useEffect(() => {
     if (!isDataLoaded) return;
-    localStorage.setItem(getUserKey("conference_entries"), JSON.stringify(entries));
+    localStorage.setItem(
+      getUserKey("conference_entries"),
+      JSON.stringify(entries),
+    );
   }, [entries, currentUser, isDataLoaded]);
 
   useEffect(() => {
     if (!isDataLoaded) return;
-    localStorage.setItem(getUserKey("future_conferences"), JSON.stringify(futureConfs));
+    localStorage.setItem(
+      getUserKey("future_conferences"),
+      JSON.stringify(futureConfs),
+    );
   }, [futureConfs, currentUser, isDataLoaded]);
 
   useEffect(() => {
     if (!isDataLoaded) return;
-    localStorage.setItem(getUserKey("app_notifications"), JSON.stringify(inAppNotifications));
+    localStorage.setItem(
+      getUserKey("app_notifications"),
+      JSON.stringify(inAppNotifications),
+    );
   }, [inAppNotifications, currentUser, isDataLoaded]);
 
   useEffect(() => {
     if (!isDataLoaded) return;
-    localStorage.setItem(getUserKey("collection_links"), JSON.stringify(collectionLinks));
+    localStorage.setItem(
+      getUserKey("collection_links"),
+      JSON.stringify(collectionLinks),
+    );
   }, [collectionLinks, currentUser, isDataLoaded]);
 
   useEffect(() => {
@@ -143,10 +170,12 @@ export default function App() {
       const now = new Date();
       let updated = false;
 
-      const updatedNotifs = inAppNotifications.map(notif => {
+      const updatedNotifs = inAppNotifications.map((notif) => {
         if (notif.isNotified) return notif;
 
-        const notifyDateTime = new Date(`${notif.notifyDate}T${notif.notifyTime}`);
+        const notifyDateTime = new Date(
+          `${notif.notifyDate}T${notif.notifyTime}`,
+        );
         if (isNaN(notifyDateTime.getTime())) return notif;
 
         if (now >= notifyDateTime) {
@@ -159,9 +188,14 @@ export default function App() {
             draggable: true,
             theme: "dark",
           });
-          
-          if ("Notification" in window && window.Notification.permission === "granted") {
-            new window.Notification("Conference Tracker Reminder", { body: notif.message });
+
+          if (
+            "Notification" in window &&
+            window.Notification.permission === "granted"
+          ) {
+            new window.Notification("Conference Tracker Reminder", {
+              body: notif.message,
+            });
           }
 
           updated = true;
@@ -179,28 +213,46 @@ export default function App() {
   }, [inAppNotifications]);
 
   const saveNotificationSettings = () => {
-    if (!notifyForm.conferenceId || !notifyForm.notifyDate || !notifyForm.notifyTime) {
+    if (
+      !notifyForm.conferenceId ||
+      !notifyForm.notifyDate ||
+      !notifyForm.notifyTime
+    ) {
       toast.error("Please fill all requiteal fields");
       return;
     }
-    
+
     // Request browser notification permission
-    if ("Notification" in window && window.Notification.permission !== "denied" && window.Notification.permission !== "granted") {
+    if (
+      "Notification" in window &&
+      window.Notification.permission !== "denied" &&
+      window.Notification.permission !== "granted"
+    ) {
       window.Notification.requestPermission();
     }
 
-    const conf = entries.find(e => e.id.toString() === notifyForm.conferenceId);
-    
-    setInAppNotifications(prev => [...prev, {
-      id: Date.now(),
-      conferenceName: conf ? conf.conferenceName : "Unknown",
-      message: notifyForm.message,
-      notifyDate: notifyForm.notifyDate,
-      notifyTime: notifyForm.notifyTime,
-      isNotified: false
-    }]);
+    const conf = entries.find(
+      (e) => e.id.toString() === notifyForm.conferenceId,
+    );
 
-    setNotifyForm({ conferenceId: "", message: "", notifyDate: "", notifyTime: "" });
+    setInAppNotifications((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        conferenceName: conf ? conf.conferenceName : "Unknown",
+        message: notifyForm.message,
+        notifyDate: notifyForm.notifyDate,
+        notifyTime: notifyForm.notifyTime,
+        isNotified: false,
+      },
+    ]);
+
+    setNotifyForm({
+      conferenceId: "",
+      message: "",
+      notifyDate: "",
+      notifyTime: "",
+    });
     setShowNotifyModal(false);
     toast.success("Notification scheduled successfully!");
   };
@@ -219,7 +271,10 @@ export default function App() {
     return [...entries].sort((a, b) => {
       if (!a.conferenceDate) return 1;
       if (!b.conferenceDate) return -1;
-      return new Date(a.conferenceDate).getTime() - new Date(b.conferenceDate).getTime();
+      return (
+        new Date(a.conferenceDate).getTime() -
+        new Date(b.conferenceDate).getTime()
+      );
     });
   }, [entries]);
 
@@ -227,7 +282,9 @@ export default function App() {
     event.preventDefault();
     if (editingId !== null) {
       setEntries((previous) =>
-        previous.map((entry) => (entry.id === editingId ? { ...form, id: editingId } : entry))
+        previous.map((entry) =>
+          entry.id === editingId ? { ...form, id: editingId } : entry,
+        ),
       );
       setEditingId(null);
     } else {
@@ -267,7 +324,10 @@ export default function App() {
       ieee: sumPapers((entry) => entry.conferenceCategory === "IEEE"),
       springers: sumPapers((entry) => entry.conferenceCategory === "Springers"),
       crc: sumPapers((entry) => entry.conferenceCategory === "CRC"),
-      other: sumPapers((entry) => !["IEEE", "Springers", "CRC"].includes(entry.conferenceCategory)),
+      other: sumPapers(
+        (entry) =>
+          !["IEEE", "Springers", "CRC"].includes(entry.conferenceCategory),
+      ),
     };
   }, [entries]);
 
@@ -275,12 +335,16 @@ export default function App() {
     if (!value) return "-";
     const [year, month] = value.split("-");
     const date = new Date(Number(year), Number(month) - 1, 1);
-    return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    return date.toLocaleDateString(undefined, {
+      month: "long",
+      year: "numeric",
+    });
   };
 
   const statusClassName = (status: string, publicationDate: string) => {
     if (publicationDate) return "bg-teal-600 text-white ring-1 ring-teal-500";
-    if (status === "Presented") return "bg-teal-500 text-white ring-1 ring-teal-400";
+    if (status === "Presented")
+      return "bg-teal-500 text-white ring-1 ring-teal-400";
     return "bg-amber-100 text-black ring-1 ring-amber-200";
   };
 
@@ -288,8 +352,17 @@ export default function App() {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.text("Conference Publication Dashboard", 14, 22);
-    
-    const tableColumn = ["S.No", "Conference", "Conf Date", "Papers", "Status", "Pub Date", "Expected Mon", "Category"];
+
+    const tableColumn = [
+      "S.No",
+      "Conference",
+      "Conf Date",
+      "Papers",
+      "Status",
+      "Pub Date",
+      "Expected Mon",
+      "Category",
+    ];
     const tableRows = sortedEntries.map((entry, index) => [
       index + 1,
       entry.conferenceName,
@@ -298,7 +371,7 @@ export default function App() {
       entry.publicationDate ? "Published" : entry.status,
       entry.publicationDate || "-",
       formatMonth(entry.expectedPublicationMonth),
-      entry.conferenceCategory
+      entry.conferenceCategory,
     ]);
 
     autoTable(doc, {
@@ -306,7 +379,7 @@ export default function App() {
       body: tableRows,
       startY: 30,
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [0, 188, 212] }
+      headStyles: { fillColor: [0, 188, 212] },
     });
 
     doc.save("conference-data.pdf");
@@ -314,13 +387,16 @@ export default function App() {
 
   const handleAddLink = () => {
     if (!linkForm.label.trim() || !linkForm.url.trim()) return;
-    setCollectionLinks(prev => [...prev, { id: Date.now(), label: linkForm.label, url: linkForm.url }]);
+    setCollectionLinks((prev) => [
+      ...prev,
+      { id: Date.now(), label: linkForm.label, url: linkForm.url },
+    ]);
     setLinkForm({ label: "", url: "" });
     toast.success("Link added successfully!");
   };
 
   const removeLink = (id: number) => {
-    setCollectionLinks(prev => prev.filter(link => link.id !== id));
+    setCollectionLinks((prev) => prev.filter((link) => link.id !== id));
   };
 
   if (currentView === "welcome") {
@@ -329,17 +405,29 @@ export default function App() {
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-teal-500/20 shadow-2xl">
           <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
-            Welcome to <span className="text-teal-400 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-teal-300">Tracker</span>
+            Welcome to{" "}
+            <span className="text-teal-400 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-teal-300">
+              Tracker
+            </span>
           </h1>
           <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light">
-            Record your publications, manage presentations, and monitor your scholar citations seamlessly through our professional dashboard.
+            Record your publications, manage presentations, and monitor your
+            scholar citations seamlessly through our professional dashboard.
           </p>
-          
+
           <div className="mt-8 mx-auto max-w-sm space-y-4">
             <div className="bg-black/50 p-4 border border-teal-500/30 rounded-xl text-left">
-              <p className="text-xs text-teal-300 font-medium uppercase tracking-wider mb-2">Notice</p>
+              <p className="text-xs text-teal-300 font-medium uppercase tracking-wider mb-2">
+                Notice
+              </p>
               <p className="text-sm text-gray-300">
-                To access your <span className="text-teal-400 font-semibold">Previous Data</span>, leave the username entirely blank and click Start to use the Default profile. Typing a new name creates a completely fresh dashboard.
+                To access your{" "}
+                <span className="text-teal-400 font-semibold">
+                  Previous Data
+                </span>
+                , leave the username entirely blank and click Start to use the
+                Default profile. Typing a new name creates a completely fresh
+                dashboard.
               </p>
             </div>
             <input
@@ -349,7 +437,7 @@ export default function App() {
               placeholder="Enter Username (Leave blank for Old Data)"
               className="w-full rounded-md border border-white/30 bg-black/50 px-4 py-3 text-center text-white outline-none transition focus:border-teal-400 text-lg placeholder:text-gray-500"
             />
-            <button 
+            <button
               onClick={handleStart}
               className="w-full rounded-full bg-teal-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(20,184,166,0.4)] transition-all hover:scale-105 hover:bg-teal-500 cursor-pointer border border-teal-400 text-center uppercase tracking-widest"
             >
@@ -367,7 +455,7 @@ export default function App() {
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setCurrentView("dashboard")}
               className="flex items-center gap-2 text-teal-400 hover:text-teal-300 transition"
             >
@@ -375,37 +463,60 @@ export default function App() {
               Back to Dashboard
             </button>
           </header>
-          
+
           <div className="rounded-2xl border border-white/20 bg-gray-900/60 backdrop-blur-md shadow-xl p-6 sm:p-8">
-            <h2 className="text-2xl font-bold mb-6 text-teal-100">Add Conference for Further Submission</h2>
+            <h2 className="text-2xl font-bold mb-6 text-teal-100">
+              Add Conference for Further Submission
+            </h2>
             <form onSubmit={submitFutureEntry} className="space-y-4">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Conference Name</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Conference Name
+                </span>
                 <input
                   requiteal
                   value={futureForm.conferenceName}
-                  onChange={(e) => setFutureForm(prev => ({...prev, conferenceName: e.target.value}))}
+                  onChange={(e) =>
+                    setFutureForm((prev) => ({
+                      ...prev,
+                      conferenceName: e.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   placeholder="e.g. CVPR 2028"
                 />
               </label>
-              
+
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Submission Deadline</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Submission Deadline
+                </span>
                 <input
                   requiteal
                   type="date"
                   value={futureForm.submissionDeadline}
-                  onChange={(e) => setFutureForm(prev => ({...prev, submissionDeadline: e.target.value}))}
+                  onChange={(e) =>
+                    setFutureForm((prev) => ({
+                      ...prev,
+                      submissionDeadline: e.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Notes / Remarks</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Notes / Remarks
+                </span>
                 <textarea
                   value={futureForm.notes}
-                  onChange={(e) => setFutureForm(prev => ({...prev, notes: e.target.value}))}
+                  onChange={(e) =>
+                    setFutureForm((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   placeholder="Additional details about the tracks, requirements, etc."
                   rows={3}
@@ -423,18 +534,33 @@ export default function App() {
 
           <div className="mt-8 rounded-2xl border border-white/20 bg-black/40 shadow-sm overflow-hidden backdrop-blur-sm">
             <div className="px-6 py-4 bg-white/5 border-b border-white/10">
-              <h3 className="font-semibold text-lg text-teal-100">Upcoming Submissions</h3>
+              <h3 className="font-semibold text-lg text-teal-100">
+                Upcoming Submissions
+              </h3>
             </div>
             {futureConfs.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">No upcoming conferences planned.</div>
+              <div className="p-6 text-center text-gray-400">
+                No upcoming conferences planned.
+              </div>
             ) : (
               <div className="divide-y divide-white/10">
-                {futureConfs.map(conf => (
-                  <div key={conf.id} className="p-6 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center">
+                {futureConfs.map((conf) => (
+                  <div
+                    key={conf.id}
+                    className="p-6 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center"
+                  >
                     <div>
-                      <h4 className="font-bold text-lg text-white">{conf.conferenceName}</h4>
-                      <p className="text-sm text-teal-300">Deadline: {conf.submissionDeadline}</p>
-                      {conf.notes && <p className="text-sm text-gray-400 mt-2">{conf.notes}</p>}
+                      <h4 className="font-bold text-lg text-white">
+                        {conf.conferenceName}
+                      </h4>
+                      <p className="text-sm text-teal-300">
+                        Deadline: {conf.submissionDeadline}
+                      </p>
+                      {conf.notes && (
+                        <p className="text-sm text-gray-400 mt-2">
+                          {conf.notes}
+                        </p>
+                      )}
                     </div>
                     <button
                       onClick={() => removeFutureEntry(conf.id)}
@@ -458,38 +584,59 @@ export default function App() {
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-2xl border border-white/20 bg-gray-900/60 backdrop-blur-md p-6 shadow-xl relative">
-            <button 
+            <button
               onClick={() => setShowNotifyModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
             >
               <X size={20} />
             </button>
-            <h3 className="text-xl font-semibold text-white mb-4">Notification Settings</h3>
+            <h3 className="text-xl font-semibold text-white mb-4">
+              Notification Settings
+            </h3>
             <p className="text-sm text-gray-300 mb-6 flex flex-col gap-2">
               <span>Set an in-app reminder for a specific conference.</span>
             </p>
-            
+
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Conference Name</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Conference Name
+                </span>
                 <select
                   value={notifyForm.conferenceId}
-                  onChange={(e) => setNotifyForm({...notifyForm, conferenceId: e.target.value})}
+                  onChange={(e) =>
+                    setNotifyForm({
+                      ...notifyForm,
+                      conferenceId: e.target.value,
+                    })
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 >
-                  <option value="" disabled>Select a conference</option>
-                  {entries.map(conf => (
-                    <option key={conf.id} value={conf.id}>{conf.conferenceName}</option>
+                  <option value="" disabled>
+                    Select a conference
+                  </option>
+                  {entries.map((conf) => (
+                    <option key={conf.id} value={conf.id}>
+                      {conf.conferenceName}
+                    </option>
                   ))}
-                  {entries.length === 0 && <option value="" disabled>No conferences available</option>}
+                  {entries.length === 0 && (
+                    <option value="" disabled>
+                      No conferences available
+                    </option>
+                  )}
                 </select>
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Custom Message</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Custom Message
+                </span>
                 <textarea
                   value={notifyForm.message}
-                  onChange={(e) => setNotifyForm({...notifyForm, message: e.target.value})}
+                  onChange={(e) =>
+                    setNotifyForm({ ...notifyForm, message: e.target.value })
+                  }
                   placeholder="e.g., Prepare slides for presentation"
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   rows={2}
@@ -497,21 +644,29 @@ export default function App() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Notify Date</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Notify Date
+                </span>
                 <input
                   type="date"
                   value={notifyForm.notifyDate}
-                  onChange={(e) => setNotifyForm({...notifyForm, notifyDate: e.target.value})}
+                  onChange={(e) =>
+                    setNotifyForm({ ...notifyForm, notifyDate: e.target.value })
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Notify Time</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Notify Time
+                </span>
                 <input
                   type="time"
                   value={notifyForm.notifyTime}
-                  onChange={(e) => setNotifyForm({...notifyForm, notifyTime: e.target.value})}
+                  onChange={(e) =>
+                    setNotifyForm({ ...notifyForm, notifyTime: e.target.value })
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
@@ -528,7 +683,6 @@ export default function App() {
       )}
 
       <div className="mx-auto max-w-7xl flex flex-col md:flex-row gap-8 items-start">
-        
         {/* Left Sidebar Actions */}
         <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
           <div className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 space-y-3">
@@ -536,38 +690,52 @@ export default function App() {
               onClick={() => setShowNotifyModal(true)}
               className="w-full flex justify-between items-center rounded-md border border-teal-500/60 bg-teal-500/10 px-4 py-3 text-sm font-medium text-teal-300 transition hover:bg-teal-500/20"
             >
-              <span className="flex gap-2 items-center"><Bell size={16} /> Notify</span>
+              <span className="flex gap-2 items-center">
+                <Bell size={16} /> Notify
+              </span>
             </button>
-            
+
             <button
               onClick={generatePDF}
               className="w-full flex justify-between items-center rounded-md border border-white/20 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
             >
-              <span className="flex gap-2 items-center"><Download size={16} /> Export PDF</span>
+              <span className="flex gap-2 items-center">
+                <Download size={16} /> Export PDF
+              </span>
             </button>
 
             <button
               onClick={() => setCurrentView("add-future")}
               className="w-full flex justify-between items-center rounded-md border border-white/20 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
             >
-              <span className="flex gap-2 items-center"><Plus size={16} /> Add Conference for Further</span>
+              <span className="flex gap-2 items-center">
+                <Plus size={16} /> Add Conference for Further
+              </span>
             </button>
           </div>
-          
+
           <div className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-teal-300">Article Collections</h3>
-            <p className="text-xs text-gray-400">Add links to your profiles (Google Scholar, ORCID, etc.).</p>
-            
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-teal-300">
+              Article Collections
+            </h3>
+            <p className="text-xs text-gray-400">
+              Add links to your profiles (Google Scholar, ORCID, etc.).
+            </p>
+
             <div className="flex flex-col gap-2">
               <input
                 value={linkForm.label}
-                onChange={(e) => setLinkForm({...linkForm, label: e.target.value})}
+                onChange={(e) =>
+                  setLinkForm({ ...linkForm, label: e.target.value })
+                }
                 placeholder="Label (e.g. Google Scholar)"
                 className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-teal-400 text-sm"
               />
               <input
                 value={linkForm.url}
-                onChange={(e) => setLinkForm({...linkForm, url: e.target.value})}
+                onChange={(e) =>
+                  setLinkForm({ ...linkForm, url: e.target.value })
+                }
                 placeholder="URL (e.g. https://scholar.google.com/...)"
                 className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-teal-400 text-sm"
               />
@@ -582,19 +750,22 @@ export default function App() {
 
             {collectionLinks.length > 0 && (
               <div className="mt-4 space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
-                {collectionLinks.map(link => (
-                  <div key={link.id} className="flex flex-col gap-1 p-2 rounded-md border border-white/10 bg-white/5">
+                {collectionLinks.map((link) => (
+                  <div
+                    key={link.id}
+                    className="flex flex-col gap-1 p-2 rounded-md border border-white/10 bg-white/5"
+                  >
                     <div className="flex justify-between items-start">
-                      <a 
+                      <a
                         href={link.url}
                         target="_blank"
-                        rel="noopener noreferrer" 
+                        rel="noopener noreferrer"
                         className="text-sm font-medium text-teal-200 hover:text-teal-100 hover:underline truncate"
                       >
                         {link.label}
                       </a>
-                      <button 
-                        onClick={() => removeLink(link.id)} 
+                      <button
+                        onClick={() => removeLink(link.id)}
                         className="text-gray-400 hover:text-teal-400 transition"
                       >
                         <X size={14} />
@@ -611,10 +782,15 @@ export default function App() {
         <div className="flex-1 space-y-6 w-full max-w-full overflow-hidden">
           <header className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-6 flex justify-between items-start">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-300">Publication Tracker</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl truncate">Conference Dashboard</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-300">
+                Publication Tracker
+              </p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl truncate">
+                Conference Dashboard
+              </h1>
               <p className="mt-2 max-w-2xl text-sm text-gray-300">
-                Add your conference papers, track acceptance and presentations, and monitor category-wise publication counts.
+                Add your conference papers, track acceptance and presentations,
+                and monitor category-wise publication counts.
               </p>
             </div>
             {currentUser ? (
@@ -623,8 +799,11 @@ export default function App() {
                 <span className="font-semibold text-teal-300 px-3 py-1 bg-teal-900/30 rounded-full border border-teal-500/30 mt-1">
                   {currentUser}
                 </span>
-                <button 
-                  onClick={() => { setIsDataLoaded(false); setCurrentView("welcome"); }}
+                <button
+                  onClick={() => {
+                    setIsDataLoaded(false);
+                    setCurrentView("welcome");
+                  }}
                   className="text-xs text-teal-400 hover:text-teal-300 mt-2"
                 >
                   Switch User
@@ -632,8 +811,12 @@ export default function App() {
               </div>
             ) : (
               <div className="flex flex-col items-end text-sm text-right">
-                <span className="text-teal-400 font-semibold mb-1">Unassigned Default Profile</span>
-                <span className="text-gray-400 text-xs mb-2 max-w-[200px]">Secure your legacy data by assigning a username.</span>
+                <span className="text-teal-400 font-semibold mb-1">
+                  Unassigned Default Profile
+                </span>
+                <span className="text-gray-400 text-xs mb-2 max-w-[200px]">
+                  Secure your legacy data by assigning a username.
+                </span>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -642,7 +825,7 @@ export default function App() {
                     placeholder="Enter new username"
                     className="rounded-md border border-white/30 bg-black/50 px-2 py-1 text-white outline-none focus:border-teal-400 text-xs"
                   />
-                  <button 
+                  <button
                     onClick={handleAssignUsername}
                     disabled={!assignUsernameInput.trim()}
                     className="rounded-md bg-teal-600 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-500 transition disabled:opacity-50"
@@ -650,8 +833,11 @@ export default function App() {
                     Assign
                   </button>
                 </div>
-                <button 
-                  onClick={() => { setIsDataLoaded(false); setCurrentView("welcome"); }}
+                <button
+                  onClick={() => {
+                    setIsDataLoaded(false);
+                    setCurrentView("welcome");
+                  }}
                   className="text-xs text-teal-400 hover:text-teal-300 mt-3"
                 >
                   Switch User
@@ -662,56 +848,100 @@ export default function App() {
 
           <section className="grid gap-4 rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 grid-cols-2 lg:grid-cols-5">
             <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">Total Papers</p>
-              <p className="mt-1 text-2xl sm:text-3xl font-semibold text-white">{counts.total}</p>
+              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
+                Total Papers
+              </p>
+              <p className="mt-1 text-2xl sm:text-3xl font-semibold text-white">
+                {counts.total}
+              </p>
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">IEEE</p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-teal-300">{counts.ieee}</p>
+              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
+                IEEE
+              </p>
+              <p className="mt-1 text-xl sm:text-2xl font-semibold text-teal-300">
+                {counts.ieee}
+              </p>
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">Springers</p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-violet-300">{counts.springers}</p>
+              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
+                Springers
+              </p>
+              <p className="mt-1 text-xl sm:text-2xl font-semibold text-violet-300">
+                {counts.springers}
+              </p>
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">CRC</p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-fuchsia-300">{counts.crc}</p>
+              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
+                CRC
+              </p>
+              <p className="mt-1 text-xl sm:text-2xl font-semibold text-fuchsia-300">
+                {counts.crc}
+              </p>
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">Other</p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-gray-200">{counts.other}</p>
+              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
+                Other
+              </p>
+              <p className="mt-1 text-xl sm:text-2xl font-semibold text-gray-200">
+                {counts.other}
+              </p>
             </div>
           </section>
 
           <section className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 shadow-sm sm:p-6">
-            <form onSubmit={submitEntry} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <form
+              onSubmit={submitEntry}
+              className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+            >
               <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-200">Conference Name</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Conference Name
+                </span>
                 <input
                   requiteal
                   value={form.conferenceName}
-                  onChange={(event) => setForm((previous) => ({ ...previous, conferenceName: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      conferenceName: event.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   placeholder="e.g. ICML 2027"
                 />
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-200">Conference Date</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Conference Date
+                </span>
                 <input
                   requiteal
                   type="date"
                   value={form.conferenceDate}
-                  onChange={(event) => setForm((previous) => ({ ...previous, conferenceDate: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      conferenceDate: event.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-200">Status</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Status
+                </span>
                 <select
                   value={form.status}
-                  onChange={(event) => setForm((previous) => ({ ...previous, status: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      status: event.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 >
                   {statuses.map((status) => (
@@ -736,7 +966,9 @@ export default function App() {
                       }
                       className="h-4 w-4 rounded border-white/30 bg-black text-teal-400 accent-teal-600"
                     />
-                    <span className="text-sm font-medium text-gray-200">Registeteal</span>
+                    <span className="text-sm font-medium text-gray-200">
+                      Registeteal
+                    </span>
                   </div>
                 </label>
               )}
@@ -744,20 +976,34 @@ export default function App() {
               {form.status === "Accepted" && form.isRegisteteal && (
                 <>
                   <label className="space-y-1">
-                    <span className="text-sm font-medium text-gray-200">Presentation Date</span>
+                    <span className="text-sm font-medium text-gray-200">
+                      Presentation Date
+                    </span>
                     <input
                       type="date"
                       value={form.presentationDate || ""}
-                      onChange={(event) => setForm((previous) => ({ ...previous, presentationDate: event.target.value }))}
+                      onChange={(event) =>
+                        setForm((previous) => ({
+                          ...previous,
+                          presentationDate: event.target.value,
+                        }))
+                      }
                       className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                     />
                   </label>
                   <label className="space-y-1">
-                    <span className="text-sm font-medium text-gray-200">Presentation Time</span>
+                    <span className="text-sm font-medium text-gray-200">
+                      Presentation Time
+                    </span>
                     <input
                       type="time"
                       value={form.presentationTime || ""}
-                      onChange={(event) => setForm((previous) => ({ ...previous, presentationTime: event.target.value }))}
+                      onChange={(event) =>
+                        setForm((previous) => ({
+                          ...previous,
+                          presentationTime: event.target.value,
+                        }))
+                      }
                       className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                     />
                   </label>
@@ -765,7 +1011,9 @@ export default function App() {
               )}
 
               <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-200">Papers Submitted</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Papers Submitted
+                </span>
                 <input
                   type="number"
                   min="0"
@@ -773,7 +1021,9 @@ export default function App() {
                   onChange={(event) =>
                     setForm((previous) => ({
                       ...previous,
-                      papersSubmitted: event.target.value ? Number(event.target.value) : "",
+                      papersSubmitted: event.target.value
+                        ? Number(event.target.value)
+                        : "",
                     }))
                   }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
@@ -782,17 +1032,26 @@ export default function App() {
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-200">Publication Date</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Publication Date
+                </span>
                 <input
                   type="date"
                   value={form.publicationDate}
-                  onChange={(event) => setForm((previous) => ({ ...previous, publicationDate: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      publicationDate: event.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-200">Expected Publication Month</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Expected Publication Month
+                </span>
                 <input
                   type="month"
                   value={form.expectedPublicationMonth}
@@ -807,10 +1066,17 @@ export default function App() {
               </label>
 
               <label className="space-y-1">
-                <span className="text-sm font-medium text-gray-200">Conference Category</span>
+                <span className="text-sm font-medium text-gray-200">
+                  Conference Category
+                </span>
                 <select
                   value={form.conferenceCategory}
-                  onChange={(event) => setForm((previous) => ({ ...previous, conferenceCategory: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      conferenceCategory: event.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 >
                   {categories.map((category) => (
@@ -861,50 +1127,79 @@ export default function App() {
               <tbody>
                 {sortedEntries.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-gray-400">
+                    <td
+                      colSpan={8}
+                      className="px-4 py-10 text-center text-gray-400"
+                    >
                       No records yet. Add your first conference entry.
                     </td>
                   </tr>
                 ) : (
                   sortedEntries.map((entry, index) => (
-                    <tr 
-                      key={entry.id} 
-                      className={`border-t border-white/20 text-gray-200 ${entry.status === 'Accepted' ? 'bg-amber-900/40 border-l-4 border-l-amber-500' : ''}`}
+                    <tr
+                      key={entry.id}
+                      className={`border-t border-white/20 text-gray-200 ${entry.status === "Accepted" ? "bg-amber-900/40 border-l-4 border-l-amber-500" : ""}`}
                     >
-                      <td className="px-4 py-3 font-medium text-white">{index + 1}</td>
-                      <td className="px-4 py-3 min-w-[150px]">{entry.conferenceName}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">{entry.conferenceDate || "-"}</td>
-                      <td className="px-4 py-3">{entry.papersSubmitted || "-"}</td>
+                      <td className="px-4 py-3 font-medium text-white">
+                        {index + 1}
+                      </td>
+                      <td className="px-4 py-3 min-w-[150px]">
+                        {entry.conferenceName}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {entry.conferenceDate || "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {entry.papersSubmitted || "-"}
+                      </td>
                       <td className="px-4 py-3 min-w-[120px]">
                         <div className="flex flex-col gap-1 items-start">
                           <div className="flex items-center gap-2">
-                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate)}`}>
-                              {entry.publicationDate ? "Published" : entry.status}
+                            <span
+                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate)}`}
+                            >
+                              {entry.publicationDate
+                                ? "Published"
+                                : entry.status}
                             </span>
                             {entry.status === "Accepted" && (
-                              <div 
-                                className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 shrink-0 ${entry.isRegisteteal ? 'bg-teal-500' : 'bg-teal-500'}`} 
-                                title={entry.isRegisteteal ? "Registeteal" : "Not Registeteal"} 
+                              <div
+                                className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 shrink-0 ${entry.isRegisteteal ? "bg-teal-500" : "bg-teal-500"}`}
+                                title={
+                                  entry.isRegisteteal
+                                    ? "Registeteal"
+                                    : "Not Registeteal"
+                                }
                               />
                             )}
                           </div>
-                          {entry.status === "Accepted" && entry.isRegisteteal && (entry.presentationDate || entry.presentationTime) && (
-                            <div className="text-[10px] text-gray-400 pl-1 whitespace-nowrap overflow-hidden text-ellipsis w-full">
-                              {entry.presentationDate && <span>{entry.presentationDate}</span>}
-                              {entry.presentationDate && entry.presentationTime && <span> at </span>}
-                              {entry.presentationTime && <span>{entry.presentationTime}</span>}
-                            </div>
-                          )}
+                          {entry.status === "Accepted" &&
+                            entry.isRegisteteal &&
+                            (entry.presentationDate ||
+                              entry.presentationTime) && (
+                              <div className="text-[10px] text-gray-400 pl-1 whitespace-nowrap overflow-hidden text-ellipsis w-full">
+                                {entry.presentationDate && (
+                                  <span>{entry.presentationDate}</span>
+                                )}
+                                {entry.presentationDate &&
+                                  entry.presentationTime && <span> at </span>}
+                                {entry.presentationTime && (
+                                  <span>{entry.presentationTime}</span>
+                                )}
+                              </div>
+                            )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">{entry.publicationDate || "-"}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {entry.publicationDate || "-"}
+                      </td>
                       <td className="px-4 py-3">{entry.conferenceCategory}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => editEntry(entry)}
-                          className="rounded-md border border-teal-500/60 px-3 py-1.5 text-xs font-medium text-teal-200 transition hover:bg-teal-500/20 cursor-pointer"
+                            className="rounded-md border border-teal-500/60 px-3 py-1.5 text-xs font-medium text-teal-200 transition hover:bg-teal-500/20 cursor-pointer"
                           >
                             Edit
                           </button>
