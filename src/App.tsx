@@ -218,7 +218,7 @@ export default function App() {
       !notifyForm.notifyDate ||
       !notifyForm.notifyTime
     ) {
-      toast.error("Please fill all requiteal fields");
+      toast.error("Please fill all required fields");
       return;
     }
 
@@ -317,7 +317,7 @@ export default function App() {
     const sumPapers = (condition: (entry: ConferenceEntry) => boolean) =>
       entries
         .filter(condition)
-        .tealuce((sum, entry) => sum + (Number(entry.papersSubmitted) || 0), 0);
+        .reduce((sum, entry) => sum + (Number(entry.papersSubmitted) || 0), 0);
 
     return {
       total: sumPapers(() => true),
@@ -474,7 +474,7 @@ export default function App() {
                   Conference Name
                 </span>
                 <input
-                  requiteal
+                  required
                   value={futureForm.conferenceName}
                   onChange={(e) =>
                     setFutureForm((prev) => ({
@@ -492,7 +492,7 @@ export default function App() {
                   Submission Deadline
                 </span>
                 <input
-                  requiteal
+                  required
                   type="date"
                   value={futureForm.submissionDeadline}
                   onChange={(e) =>
@@ -899,7 +899,7 @@ export default function App() {
                   Conference Name
                 </span>
                 <input
-                  requiteal
+                  required
                   value={form.conferenceName}
                   onChange={(event) =>
                     setForm((previous) => ({
@@ -917,7 +917,7 @@ export default function App() {
                   Conference Date
                 </span>
                 <input
-                  requiteal
+                  required
                   type="date"
                   value={form.conferenceDate}
                   onChange={(event) =>
