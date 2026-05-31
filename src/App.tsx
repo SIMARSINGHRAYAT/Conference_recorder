@@ -1963,7 +1963,7 @@ export default function App() {
           </section>
 
           <section className="overflow-x-auto rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm shadow-sm">
-            <table className="min-w-full border-collapse text-sm">
+            <table className="min-w-full border-collapse text-sm bg-black/20">
               <thead className="bg-white/10 text-left text-white">
                 <tr>
                   <th className="px-4 py-3 font-semibold">S.No</th>
@@ -1988,11 +1988,8 @@ export default function App() {
                   </tr>
                 ) : (
                   sortedEntries.map((entry, index) => (
-                    <tr
-                      key={entry.id}
-                      className={`border-t border-white/20 text-slate-800 ${entry.status === "Accepted" && (entry.isRegistered ?? entry.isRegisteteal) ? "bg-amber-50/80 border-l-4 border-l-amber-300" : entry.status === "Accepted" ? "bg-rose-50/80 border-l-4 border-l-rose-300" : entry.status === "Presented" ? "bg-emerald-50/80 border-l-4 border-l-emerald-300" : entry.status === "Published" ? "bg-sky-50/80 border-l-4 border-l-sky-300" : ""}`}
-                    >
-                      <td className="px-4 py-3 font-medium text-slate-900">
+                    <tr key={entry.id} className="border-t border-white/20 text-white">
+                      <td className="px-4 py-3 font-medium text-white">
                         {index + 1}
                       </td>
                       <td className="px-4 py-3 min-w-[150px]">
