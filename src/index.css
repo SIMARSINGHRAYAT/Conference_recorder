@@ -2,7 +2,7 @@
 
 @layer base {
   html {
-    color-scheme: light;
+    color-scheme: dark;
   }
 
   body {
@@ -10,9 +10,9 @@
     min-width: 320px;
     font-family: "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
     background:
-      radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 32%),
-      linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
-    color: #0f172a;
+      radial-gradient(circle at top, rgba(148, 163, 184, 0.15), transparent 30%),
+      linear-gradient(180deg, #050505 0%, #000000 100%);
+    color: #e5e7eb;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -23,59 +23,28 @@
   }
 
   ::selection {
-    background: rgba(56, 189, 248, 0.28);
-    color: #0f172a;
+    background: rgba(148, 163, 184, 0.3);
+    color: #ffffff;
   }
 
   .conference-light {
-    color: #0f172a;
+    color: #e5e7eb;
     background:
-      radial-gradient(circle at top left, rgba(56, 189, 248, 0.22), transparent 28%),
-      linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%) !important;
-  }
-
-  .conference-light [class~="bg-black/40"],
-  .conference-light [class~="bg-black/50"],
-  .conference-light [class~="bg-black/30"],
-  .conference-light [class~="bg-gray-900/60"],
-  .conference-light [class~="bg-black/25"] {
-    background-color: rgba(255, 255, 255, 0.8) !important;
-    border-color: rgba(148, 163, 184, 0.24) !important;
-    backdrop-filter: blur(18px);
-    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
-  }
-
-  .conference-light [class~="bg-white/5"],
-  .conference-light [class~="bg-white/10"] {
-    background-color: rgba(255, 255, 255, 0.7) !important;
-  }
-
-  .conference-light [class~="text-white"]:not(button):not(.keep-light) {
-    color: #0f172a !important;
-  }
-
-  .conference-light [class~="text-gray-300"],
-  .conference-light [class~="text-gray-400"],
-  .conference-light [class~="text-gray-200"] {
-    color: #475569 !important;
-  }
-
-  .conference-light button [class~="text-white"],
-  .conference-light button[class~="text-white"] {
-    color: #ffffff !important;
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 28%),
+      linear-gradient(180deg, #050505 0%, #000000 100%) !important;
   }
 
   .conference-light input,
   .conference-light select,
   .conference-light textarea {
-    background-color: rgba(255, 255, 255, 0.92) !important;
-    color: #0f172a !important;
-    border-color: rgba(148, 163, 184, 0.35) !important;
+    background-color: rgba(10, 10, 10, 0.9) !important;
+    color: #f8fafc !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
   }
 
   .conference-light input::placeholder,
   .conference-light textarea::placeholder {
-    color: #94a3b8;
+    color: #9ca3af;
   }
 }
 

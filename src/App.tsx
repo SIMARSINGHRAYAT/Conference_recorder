@@ -61,7 +61,7 @@ type FutureConference = {
 };
 
 const statuses = ["Accepted", "Presented", "Published"];
-const categories = ["IEEE", "Springers", "CRC"];
+const defaultCategories = ["IEEE", "Springers", "CRC"];
 
 type View = "welcome" | "dashboard" | "add-future";
 
@@ -116,9 +116,15 @@ export default function App() {
     const saved = localStorage.getItem("collection_links_SIMAR");
     return saved ? JSON.parse(saved).map(normalizeConferenceLink) : [];
   });
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(() => {
+    const saved = localStorage.getItem("conference_categories_SIMAR");
+    return saved ? JSON.parse(saved) : defaultCategories;
+  });
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryInput, setCategoryInput] = useState("");
   const [activeLinkEntry, setActiveLinkEntry] = useState<ConferenceEntry | null>(null);
   const [linkConferenceUrl, setLinkConferenceUrl] = useState("");
-  const [linkArticleUrl, setLinkArticleUrl] = useState("");
+  const [linkArticleUrls, setLinkArticleUrls] = useState<string[]>([]);
 
   const [currentUser, setCurrentUser] = useState<string>("SIMAR");
   const [usernameInput, setUsernameInput] = useState<string>("SIMAR");
@@ -357,6 +363,25 @@ export default function App() {
     }
     handleStart();
   }, []);
+
+  useEffect(() => {
+    const merged = Array.from(
+      new Set([...defaultCategories, ...categoryOptions, ...entries.map((entry) => entry.conferenceCategory)]),
+    ).filter(Boolean);
+    const normalized = merged.length > 0 ? merged : defaultCategories;
+    const current = Array.from(new Set(categoryOptions));
+
+    if (
+      normalized.length !== current.length ||
+      normalized.some((category, index) => category !== current[index])
+    ) {
+      setCategoryOptions(normalized);
+    }
+  }, [entries]);
+
+  useEffect(() => {
+    localStorage.setItem("conference_categories_SIMAR", JSON.stringify(categoryOptions));
+  }, [categoryOptions]);
 
   const getUserKey = (base: string) =>
     currentUser ? `${base}_${currentUser}` : base;
@@ -817,17 +842,24 @@ export default function App() {
         .filter(condition)
         .reduce((sum, entry) => sum + (Number(entry.papersSubmitted) || 0), 0);
 
+    const categoryTotals = categoryOptions.reduce(
+      (accumulator, category) => {
+        accumulator[category] = sumPapers(
+          (entry) => entry.conferenceCategory === category,
+        );
+        return accumulator;
+      },
+      {} as Record<string, number>,
+    );
+
     return {
       total: sumPapers(() => true),
-      ieee: sumPapers((entry) => entry.conferenceCategory === "IEEE"),
-      springers: sumPapers((entry) => entry.conferenceCategory === "Springers"),
-      crc: sumPapers((entry) => entry.conferenceCategory === "CRC"),
+      categories: categoryTotals,
       other: sumPapers(
-        (entry) =>
-          !["IEEE", "Springers", "CRC"].includes(entry.conferenceCategory),
+        (entry) => !categoryOptions.includes(entry.conferenceCategory),
       ),
     };
-  }, [entries]);
+  }, [entries, categoryOptions]);
 
   const formatMonth = (value: string) => {
     if (!value) return "-";
@@ -896,13 +928,15 @@ export default function App() {
     const conferenceLink = collectionLinks.find(
       (link) => link.entryId === entry.id && link.kind === "conference",
     );
-    const articleLink = collectionLinks.find(
+    const articleLinks = collectionLinks.filter(
       (link) => link.entryId === entry.id && link.kind === "article",
     );
+    const paperCount = Math.max(1, Number(entry.papersSubmitted) || 1);
+    const articleUrls = Array.from({ length: paperCount }, (_, index) => articleLinks[index]?.url || "");
 
     setActiveLinkEntry(entry);
     setLinkConferenceUrl(conferenceLink?.url || "");
-    setLinkArticleUrl(articleLink?.url || "");
+    setLinkArticleUrls(articleUrls);
   };
 
   const saveLinkEditor = () => {
@@ -922,21 +956,41 @@ export default function App() {
       });
     }
 
-    if (linkArticleUrl.trim()) {
-      nextLinks.push({
-        id: Date.now() + 1,
-        entryId: activeLinkEntry.id,
-        label: `${activeLinkEntry.conferenceName} article link`,
-        url: linkArticleUrl.trim(),
-        kind: "article",
+    linkArticleUrls
+      .map((url) => url.trim())
+      .filter(Boolean)
+      .forEach((url, index) => {
+        nextLinks.push({
+          id: Date.now() + index + 1,
+          entryId: activeLinkEntry.id,
+          label: `${activeLinkEntry.conferenceName} article link ${index + 1}`,
+          url,
+          kind: "article",
+        });
       });
-    }
 
     setCollectionLinks(nextLinks);
     setActiveLinkEntry(null);
     setLinkConferenceUrl("");
-    setLinkArticleUrl("");
+    setLinkArticleUrls([]);
     toast.success("Links saved for this conference.");
+  };
+
+  const openCategoryEditor = () => {
+    setCategoryInput("");
+    setShowCategoryModal(true);
+  };
+
+  const saveCategoryType = () => {
+    const trimmed = categoryInput.trim();
+    if (!trimmed) return;
+
+    setCategoryOptions((previous) =>
+      previous.includes(trimmed) ? previous : [...previous, trimmed],
+    );
+    setCategoryInput("");
+    setShowCategoryModal(false);
+    toast.success(`${trimmed} added as a conference type.`);
   };
 
   if (currentView === "welcome") {
@@ -1215,7 +1269,7 @@ export default function App() {
               onClick={() => {
                 setActiveLinkEntry(null);
                 setLinkConferenceUrl("");
-                setLinkArticleUrl("");
+                  setLinkArticleUrls([]);
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
             >
@@ -1247,12 +1301,23 @@ export default function App() {
                 <span className="text-sm font-medium text-gray-200">
                   Article website link
                 </span>
-                <input
-                  value={linkArticleUrl}
-                  onChange={(event) => setLinkArticleUrl(event.target.value)}
-                  placeholder="https://publisher.example.com/article"
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
-                />
+                <div className="space-y-2">
+                  {linkArticleUrls.map((url, index) => (
+                    <input
+                      key={`${activeLinkEntry.id}-${index}`}
+                      value={url}
+                      onChange={(event) =>
+                        setLinkArticleUrls((previous) =>
+                          previous.map((current, currentIndex) =>
+                            currentIndex === index ? event.target.value : current,
+                          ),
+                        )
+                      }
+                      placeholder={`Article link ${index + 1}`}
+                      className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                    />
+                  ))}
+                </div>
               </label>
 
               <button
@@ -1260,6 +1325,49 @@ export default function App() {
                 className="w-full rounded-md bg-teal-700 hover:bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition"
               >
                 Save Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-3xl border border-white/20 bg-gray-900/70 backdrop-blur-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowCategoryModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X size={20} />
+            </button>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-200">
+              Edit
+            </p>
+            <h3 className="mt-2 text-xl font-semibold text-white">
+              Add conference type
+            </h3>
+            <p className="mt-2 text-sm text-gray-300">
+              Type a new conference category and save it to the paper summary.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">
+                  Conference type
+                </span>
+                <input
+                  value={categoryInput}
+                  onChange={(event) => setCategoryInput(event.target.value)}
+                  placeholder="e.g. Scopus"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                />
+              </label>
+
+              <button
+                onClick={saveCategoryType}
+                className="w-full rounded-md bg-teal-700 hover:bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition"
+              >
+                Save
               </button>
             </div>
           </div>
@@ -1377,34 +1485,29 @@ export default function App() {
                 {counts.total}
               </p>
             </div>
+            {categoryOptions.map((category) => (
+              <div key={category}>
+                <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
+                  {category}
+                </p>
+                <p className="mt-1 text-xl sm:text-2xl font-semibold text-teal-300">
+                  {counts.categories[category] || 0}
+                </p>
+              </div>
+            ))}
             <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
-                IEEE
-              </p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-teal-300">
-                {counts.ieee}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
-                Springers
-              </p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-violet-300">
-                {counts.springers}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
-                CRC
-              </p>
-              <p className="mt-1 text-xl sm:text-2xl font-semibold text-fuchsia-300">
-                {counts.crc}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
-                Other
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 truncate">
+                  Other
+                </p>
+                <button
+                  type="button"
+                  onClick={openCategoryEditor}
+                  className="text-[10px] font-semibold uppercase tracking-wider text-teal-400 hover:text-teal-300"
+                >
+                  Edit
+                </button>
+              </div>
               <p className="mt-1 text-xl sm:text-2xl font-semibold text-gray-200">
                 {counts.other}
               </p>
@@ -1601,7 +1704,7 @@ export default function App() {
                   }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 >
-                  {categories.map((category) => (
+                  {categoryOptions.map((category) => (
                     <option key={category} value={category}>
                       {category}
                     </option>
@@ -1660,9 +1763,9 @@ export default function App() {
                   sortedEntries.map((entry, index) => (
                     <tr
                       key={entry.id}
-                      className={`border-t border-white/20 text-gray-200 ${entry.status === "Accepted" && (entry.isRegistered ?? entry.isRegisteteal) ? "bg-amber-50/80 border-l-4 border-l-amber-300" : entry.status === "Accepted" ? "bg-rose-50/80 border-l-4 border-l-rose-300" : entry.status === "Presented" ? "bg-emerald-50/80 border-l-4 border-l-emerald-300" : entry.status === "Published" ? "bg-sky-50/80 border-l-4 border-l-sky-300" : ""}`}
+                      className={`border-t border-white/20 text-slate-800 ${entry.status === "Accepted" && (entry.isRegistered ?? entry.isRegisteteal) ? "bg-amber-50/80 border-l-4 border-l-amber-300" : entry.status === "Accepted" ? "bg-rose-50/80 border-l-4 border-l-rose-300" : entry.status === "Presented" ? "bg-emerald-50/80 border-l-4 border-l-emerald-300" : entry.status === "Published" ? "bg-sky-50/80 border-l-4 border-l-sky-300" : ""}`}
                     >
-                      <td className="px-4 py-3 font-medium text-white">
+                      <td className="px-4 py-3 font-medium text-slate-900">
                         {index + 1}
                       </td>
                       <td className="px-4 py-3 min-w-[150px]">
