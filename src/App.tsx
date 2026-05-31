@@ -71,6 +71,12 @@ type FutureConference = {
   notes: string;
 };
 
+type ScholarLinks = {
+  googleScholar: string;
+  orcid: string;
+  scopus: string;
+};
+
 const statuses = ["Accepted", "Presented", "Published"];
 const defaultCategories = ["IEEE", "Springers", "CRC"];
 
@@ -97,6 +103,12 @@ const normalizeFutureConference = (conference: any): FutureConference => ({
   submissionDeadline: conference.submissionDeadline || "",
   notes: conference.notes || "",
 });
+
+const emptyScholarLinks: ScholarLinks = {
+  googleScholar: "",
+  orcid: "",
+  scopus: "",
+};
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>("welcome");
@@ -142,12 +154,18 @@ export default function App() {
     const saved = localStorage.getItem("presentation_schedules_SIMAR");
     return saved ? JSON.parse(saved) : [];
   });
+  const [scholarLinks, setScholarLinks] = useState<ScholarLinks>(() => {
+    const saved = localStorage.getItem("scholar_links_SIMAR");
+    return saved ? JSON.parse(saved) : emptyScholarLinks;
+  });
   const [categoryOptions, setCategoryOptions] = useState<string[]>(() => {
     const saved = localStorage.getItem("conference_categories_SIMAR");
     return saved ? JSON.parse(saved) : defaultCategories;
   });
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
   const [categoryInput, setCategoryInput] = useState("");
+  const [userRenameInput, setUserRenameInput] = useState("");
   const [activeLinkEntry, setActiveLinkEntry] = useState<ConferenceEntry | null>(null);
   const [linkConferenceUrl, setLinkConferenceUrl] = useState("");
   const [linkArticleUrls, setLinkArticleUrls] = useState<string[]>([]);
@@ -420,20 +438,98 @@ export default function App() {
   }, [categoryOptions]);
 
   useEffect(() => {
+    if (!isDataLoaded) return;
     localStorage.setItem(
-      "presentation_schedules_SIMAR",
+      getUserKey("presentation_schedules"),
       JSON.stringify(presentationSchedules),
     );
   }, [presentationSchedules]);
 
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    localStorage.setItem(getUserKey("scholar_links"), JSON.stringify(scholarLinks));
+  }, [scholarLinks, currentUser, isDataLoaded]);
+
   const getUserKey = (base: string) =>
     currentUser ? `${base}_${currentUser}` : base;
+
+  const userStorageBases = [
+    "conference_entries",
+    "future_conferences",
+    "app_notifications",
+    "collection_links",
+    "presentation_schedules",
+    "scholar_links",
+  ];
+
+  const readUserStorage = <T,>(base: string, fallback: T): T => {
+    const saved = localStorage.getItem(getUserKey(base));
+    if (!saved) return fallback;
+    try {
+      return JSON.parse(saved) as T;
+    } catch {
+      return fallback;
+    }
+  };
 
   const handleAssignUsername = () => {
     const active = assignUsernameInput.trim();
     if (!active) return;
     setCurrentUser(active);
     toast.success(`Data assigned to profile: ${active}`);
+  };
+
+  const openUserEditor = () => {
+    setUserRenameInput(currentUser);
+    setShowUserModal(true);
+  };
+
+  const renameCurrentUser = () => {
+    const nextUser = userRenameInput.trim();
+    if (!nextUser || nextUser === currentUser) return;
+
+    const oldUser = currentUser;
+    const snapshot = {
+      conference_entries: readUserStorage("conference_entries", entries),
+      future_conferences: readUserStorage("future_conferences", futureConfs),
+      app_notifications: readUserStorage("app_notifications", inAppNotifications),
+      collection_links: readUserStorage("collection_links", collectionLinks),
+      presentation_schedules: readUserStorage("presentation_schedules", presentationSchedules),
+      scholar_links: readUserStorage("scholar_links", scholarLinks),
+    };
+
+    userStorageBases.forEach((base) => {
+      localStorage.setItem(`${base}_${nextUser}`, JSON.stringify((snapshot as any)[base]));
+      localStorage.removeItem(`${base}_${oldUser}`);
+    });
+
+    setCurrentUser(nextUser);
+    setUsernameInput(nextUser);
+    setUserRenameInput(nextUser);
+    setShowUserModal(false);
+    toast.success(`Username updated to ${nextUser}`);
+  };
+
+  const deleteCurrentUser = () => {
+    const oldUser = currentUser;
+
+    userStorageBases.forEach((base) => {
+      localStorage.removeItem(`${base}_${oldUser}`);
+    });
+
+    setEntries([]);
+    setFutureConfs([]);
+    setInAppNotifications([]);
+    setCollectionLinks([]);
+    setPresentationSchedules([]);
+    setScholarLinks(emptyScholarLinks);
+    setCurrentUser("");
+    setUsernameInput("");
+    setAssignUsernameInput("");
+    setShowUserModal(false);
+    setIsDataLoaded(false);
+    setCurrentView("welcome");
+    toast.success("Account deleted.");
   };
 
   const handleStart = () => {
@@ -452,6 +548,12 @@ export default function App() {
 
     const c = localStorage.getItem(`collection_links${suffix}`);
     setCollectionLinks(c ? JSON.parse(c).map(normalizeConferenceLink) : []);
+
+    const p = localStorage.getItem(`presentation_schedules${suffix}`);
+    setPresentationSchedules(p ? JSON.parse(p) : []);
+
+    const s = localStorage.getItem(`scholar_links${suffix}`);
+    setScholarLinks(s ? JSON.parse(s) : emptyScholarLinks);
 
     setIsDataLoaded(true);
     setCurrentView("dashboard");
@@ -1106,7 +1208,7 @@ export default function App() {
 
   if (currentView === "welcome") {
     return (
-      <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-stone-100 via-amber-50 to-stone-200 px-4 font-sans relative overflow-hidden">
+      <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-black via-slate-950 to-black px-4 font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-teal-500/20 shadow-2xl">
           <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
@@ -1142,7 +1244,7 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="conference-light animate-bg min-h-screen bg-gradient-to-br from-stone-100 to-stone-200 px-4 py-8 text-white sm:px-8 font-sans">
+      <main className="conference-light animate-bg min-h-screen bg-gradient-to-br from-black via-slate-950 to-black px-4 py-8 text-white sm:px-8 font-sans">
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
@@ -1303,7 +1405,7 @@ export default function App() {
   }
 
   return (
-    <main className="conference-light animate-bg relative min-h-screen bg-gradient-to-br from-stone-100 to-stone-200 px-4 py-8 text-white sm:px-8 font-sans">
+    <main className="conference-light animate-bg relative min-h-screen bg-gradient-to-br from-black via-slate-950 to-black px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1672,6 +1774,55 @@ export default function App() {
         </div>
       )}
 
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-white/20 bg-gray-900/80 backdrop-blur-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => setShowUserModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X size={20} />
+            </button>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-fuchsia-200">
+              Edit User
+            </p>
+            <h3 className="mt-2 text-xl font-semibold text-white">
+              Update account details
+            </h3>
+            <p className="mt-2 text-sm text-gray-300">
+              Rename the current user or delete the account and all linked data.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Username</span>
+                <input
+                  value={userRenameInput}
+                  onChange={(event) => setUserRenameInput(event.target.value)}
+                  placeholder="Enter a new username"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-fuchsia-400"
+                />
+              </label>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  onClick={renameCurrentUser}
+                  className="flex-1 rounded-md border border-fuchsia-500/60 bg-fuchsia-500/10 px-4 py-2 text-sm font-semibold text-fuchsia-200 transition hover:bg-fuchsia-500/20"
+                >
+                  Rename User
+                </button>
+                <button
+                  onClick={deleteCurrentUser}
+                  className="flex-1 rounded-md border border-rose-500/60 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/20"
+                >
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-7xl flex flex-col md:flex-row gap-8 items-start">
         {/* Left Sidebar Actions */}
         <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
@@ -1704,6 +1855,107 @@ export default function App() {
             </button>
 
           </div>
+
+          <div className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-fuchsia-300">
+                Scholar Links
+              </p>
+              <h3 className="mt-1 text-lg font-semibold text-white">
+                Research profiles
+              </h3>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">
+                  Google Scholar
+                </span>
+                <input
+                  value={scholarLinks.googleScholar}
+                  onChange={(event) =>
+                    setScholarLinks((previous) => ({
+                      ...previous,
+                      googleScholar: event.target.value,
+                    }))
+                  }
+                  placeholder="https://scholar.google.com/..."
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-fuchsia-400"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">ORCiD ID</span>
+                <input
+                  value={scholarLinks.orcid}
+                  onChange={(event) =>
+                    setScholarLinks((previous) => ({
+                      ...previous,
+                      orcid: event.target.value,
+                    }))
+                  }
+                  placeholder="https://orcid.org/..."
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-fuchsia-400"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Scopus ID</span>
+                <input
+                  value={scholarLinks.scopus}
+                  onChange={(event) =>
+                    setScholarLinks((previous) => ({
+                      ...previous,
+                      scopus: event.target.value,
+                    }))
+                  }
+                  placeholder="https://www.scopus.com/..."
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-fuchsia-400"
+                />
+              </label>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => localStorage.setItem(getUserKey("scholar_links"), JSON.stringify(scholarLinks))}
+              className="w-full rounded-md border border-fuchsia-500/60 bg-fuchsia-500/10 px-4 py-2 text-sm font-semibold text-fuchsia-200 transition hover:bg-fuchsia-500/20"
+            >
+              Save Links
+            </button>
+
+            <div className="space-y-2 text-sm">
+              {scholarLinks.googleScholar && (
+                <a
+                  href={scholarLinks.googleScholar}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-md border border-white/10 bg-white/5 px-3 py-2 text-fuchsia-100 hover:bg-white/10 transition truncate"
+                >
+                  Google Scholar
+                </a>
+              )}
+              {scholarLinks.orcid && (
+                <a
+                  href={scholarLinks.orcid}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-md border border-white/10 bg-white/5 px-3 py-2 text-fuchsia-100 hover:bg-white/10 transition truncate"
+                >
+                  ORCiD
+                </a>
+              )}
+              {scholarLinks.scopus && (
+                <a
+                  href={scholarLinks.scopus}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-md border border-white/10 bg-white/5 px-3 py-2 text-fuchsia-100 hover:bg-white/10 transition truncate"
+                >
+                  Scopus
+                </a>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Main Content */}
@@ -1728,13 +1980,10 @@ export default function App() {
                   {currentUser}
                 </span>
                 <button
-                  onClick={() => {
-                    setIsDataLoaded(false);
-                    setCurrentView("welcome");
-                  }}
+                  onClick={openUserEditor}
                   className="text-xs text-teal-400 hover:text-teal-300 mt-2"
                 >
-                  Switch User
+                  Edit User
                 </button>
               </div>
             ) : (
@@ -1762,13 +2011,10 @@ export default function App() {
                   </button>
                 </div>
                 <button
-                  onClick={() => {
-                    setIsDataLoaded(false);
-                    setCurrentView("welcome");
-                  }}
+                  onClick={openUserEditor}
                   className="text-xs text-teal-400 hover:text-teal-300 mt-3"
                 >
-                  Switch User
+                  Edit User
                 </button>
               </div>
             )}

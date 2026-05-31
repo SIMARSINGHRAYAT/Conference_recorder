@@ -9,14 +9,13 @@
     margin: 0;
     min-width: 320px;
     font-family: "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
-    background:
-      radial-gradient(circle at top left, rgba(255, 244, 214, 0.72), transparent 28%),
-      radial-gradient(circle at top right, rgba(243, 232, 202, 0.55), transparent 26%),
-      linear-gradient(180deg, #f8f1df 0%, #efe2c1 100%);
-    color: #1f2937;
+    background: #000000;
+    color: #f8fafc;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: relative;
+    overflow-x: hidden;
   }
 
   * {
@@ -24,28 +23,71 @@
   }
 
   ::selection {
-    background: rgba(245, 224, 170, 0.75);
-    color: #111827;
+    background: rgba(236, 72, 153, 0.35);
+    color: #ffffff;
   }
 
   .conference-light {
-    color: #1f2937;
+    color: #f8fafc;
     background:
-      radial-gradient(circle at top left, rgba(255, 250, 235, 0.95), transparent 28%),
-      linear-gradient(180deg, #fdf7ea 0%, #f3e6c7 100%) !important;
+      radial-gradient(circle at 15% 20%, rgba(0, 191, 255, 0.18), transparent 18%),
+      radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.18), transparent 20%),
+      radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.15), transparent 22%),
+      linear-gradient(180deg, #000000 0%, #020617 100%) !important;
   }
 
   .conference-light input,
   .conference-light select,
   .conference-light textarea {
-    background-color: rgba(10, 10, 10, 0.9) !important;
+    background-color: rgba(3, 7, 18, 0.9) !important;
     color: #f8fafc !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(56, 189, 248, 0.18) !important;
   }
 
   .conference-light input::placeholder,
   .conference-light textarea::placeholder {
-    color: #9ca3af;
+    color: #64748b;
+  }
+
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    inset: -20%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::before {
+    background:
+      repeating-linear-gradient(
+        120deg,
+        rgba(34, 211, 238, 0.08) 0 2px,
+        transparent 2px 140px
+      ),
+      repeating-linear-gradient(
+        60deg,
+        rgba(168, 85, 247, 0.07) 0 1px,
+        transparent 1px 110px
+      );
+    filter: blur(0.25px);
+    opacity: 0.75;
+    animation: neonFlow 22s linear infinite;
+  }
+
+  body::after {
+    background:
+      radial-gradient(circle at 20% 35%, rgba(34, 211, 238, 0.16), transparent 16%),
+      radial-gradient(circle at 70% 25%, rgba(168, 85, 247, 0.15), transparent 18%),
+      radial-gradient(circle at 65% 75%, rgba(236, 72, 153, 0.14), transparent 17%),
+      radial-gradient(circle at 90% 60%, rgba(59, 130, 246, 0.12), transparent 14%);
+    mix-blend-mode: screen;
+    animation: neonPulse 14s ease-in-out infinite;
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
   }
 }
 
@@ -84,5 +126,27 @@
   }
   100% {
     background-position: 0% 50%;
+  }
+}
+
+@keyframes neonFlow {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(3%, -2%, 0) rotate(2deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+@keyframes neonPulse {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
   }
 }
