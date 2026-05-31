@@ -3,15 +3,12 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
   Bell,
-  ExternalLink,
   Download,
   X,
   Search,
   Check,
   Plus,
   ArrowLeft,
-  Globe,
-  FileText,
   Link2,
 } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
@@ -37,6 +34,7 @@ type ConferenceForm = Omit<ConferenceEntry, "id">;
 
 type ConferenceLink = {
   id: number;
+  entryId?: number;
   label: string;
   url: string;
   kind: "conference" | "article";
@@ -65,7 +63,7 @@ type FutureConference = {
 const statuses = ["Accepted", "Presented", "Published"];
 const categories = ["IEEE", "Springers", "CRC"];
 
-type View = "welcome" | "dashboard" | "add-future" | "links";
+type View = "welcome" | "dashboard" | "add-future";
 
 const normalizeConferenceEntry = (entry: any): ConferenceEntry => ({
   ...entry,
@@ -75,6 +73,7 @@ const normalizeConferenceEntry = (entry: any): ConferenceEntry => ({
 
 const normalizeConferenceLink = (link: any): ConferenceLink => ({
   id: link.id,
+  entryId: link.entryId,
   label: link.label || "Untitled link",
   url: link.url || "",
   kind: link.kind === "conference" ? "conference" : "article",
@@ -113,12 +112,13 @@ export default function App() {
     notifyTime: "",
   });
 
-  const [conferenceLinkUrl, setConferenceLinkUrl] = useState("");
-  const [articleLinkUrl, setArticleLinkUrl] = useState("");
   const [collectionLinks, setCollectionLinks] = useState<ConferenceLink[]>(() => {
     const saved = localStorage.getItem("collection_links_SIMAR");
     return saved ? JSON.parse(saved).map(normalizeConferenceLink) : [];
   });
+  const [activeLinkEntry, setActiveLinkEntry] = useState<ConferenceEntry | null>(null);
+  const [linkConferenceUrl, setLinkConferenceUrl] = useState("");
+  const [linkArticleUrl, setLinkArticleUrl] = useState("");
 
   const [currentUser, setCurrentUser] = useState<string>("SIMAR");
   const [usernameInput, setUsernameInput] = useState<string>("SIMAR");
@@ -839,14 +839,20 @@ export default function App() {
     });
   };
 
-  const statusClassName = (status: string, publicationDate: string) => {
+  const statusClassName = (
+    status: string,
+    publicationDate: string,
+    isRegistered: boolean,
+  ) => {
     if (status === "Published" || publicationDate)
-      return "bg-sky-500/15 text-sky-100 ring-1 ring-sky-400/40";
+      return "bg-sky-100 text-sky-800 ring-1 ring-sky-200";
     if (status === "Presented")
-      return "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/40";
+      return "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200";
+    if (status === "Accepted" && isRegistered)
+      return "bg-amber-100 text-amber-800 ring-1 ring-amber-200";
     if (status === "Accepted")
-      return "bg-amber-400/15 text-amber-100 ring-1 ring-amber-300/50";
-    return "bg-slate-500/15 text-slate-100 ring-1 ring-slate-400/40";
+      return "bg-rose-100 text-rose-800 ring-1 ring-rose-200";
+    return "bg-slate-100 text-slate-700 ring-1 ring-slate-200";
   };
 
   const generatePDF = () => {
@@ -886,43 +892,56 @@ export default function App() {
     doc.save("conference-data.pdf");
   };
 
-  const addConferenceLink = () => {
-    if (!conferenceLinkUrl.trim()) return;
-    setCollectionLinks((prev) => [
-      ...prev,
-      {
+  const openLinkEditor = (entry: ConferenceEntry) => {
+    const conferenceLink = collectionLinks.find(
+      (link) => link.entryId === entry.id && link.kind === "conference",
+    );
+    const articleLink = collectionLinks.find(
+      (link) => link.entryId === entry.id && link.kind === "article",
+    );
+
+    setActiveLinkEntry(entry);
+    setLinkConferenceUrl(conferenceLink?.url || "");
+    setLinkArticleUrl(articleLink?.url || "");
+  };
+
+  const saveLinkEditor = () => {
+    if (!activeLinkEntry) return;
+
+    const nextLinks = collectionLinks.filter(
+      (link) => link.entryId !== activeLinkEntry.id,
+    );
+
+    if (linkConferenceUrl.trim()) {
+      nextLinks.push({
         id: Date.now(),
-        label: "Conference website",
-        url: conferenceLinkUrl.trim(),
+        entryId: activeLinkEntry.id,
+        label: `${activeLinkEntry.conferenceName} conference link`,
+        url: linkConferenceUrl.trim(),
         kind: "conference",
-      },
-    ]);
-    setConferenceLinkUrl("");
-    toast.success("Conference website link saved!");
-  };
+      });
+    }
 
-  const addArticleLink = () => {
-    if (!articleLinkUrl.trim()) return;
-    setCollectionLinks((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        label: "Article website",
-        url: articleLinkUrl.trim(),
+    if (linkArticleUrl.trim()) {
+      nextLinks.push({
+        id: Date.now() + 1,
+        entryId: activeLinkEntry.id,
+        label: `${activeLinkEntry.conferenceName} article link`,
+        url: linkArticleUrl.trim(),
         kind: "article",
-      },
-    ]);
-    setArticleLinkUrl("");
-    toast.success("Article website link saved!");
-  };
+      });
+    }
 
-  const removeLink = (id: number) => {
-    setCollectionLinks((prev) => prev.filter((link) => link.id !== id));
+    setCollectionLinks(nextLinks);
+    setActiveLinkEntry(null);
+    setLinkConferenceUrl("");
+    setLinkArticleUrl("");
+    toast.success("Links saved for this conference.");
   };
 
   if (currentView === "welcome") {
     return (
-      <main className="animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-950 via-teal-900 to-teal-900 px-4 font-sans relative overflow-hidden">
+      <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-950 via-teal-900 to-teal-900 px-4 font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-teal-500/20 shadow-2xl">
           <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
@@ -958,7 +977,7 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="animate-bg min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
+      <main className="conference-light animate-bg min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
@@ -1085,167 +1104,8 @@ export default function App() {
     );
   }
 
-  if (currentView === "links") {
-    const conferenceLinks = collectionLinks.filter(
-      (link) => link.kind === "conference",
-    );
-    const articleLinks = collectionLinks.filter((link) => link.kind !== "conference");
-
-    return (
-      <main className="animate-bg min-h-screen bg-gradient-to-br from-slate-950 via-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
-        <ToastContainer />
-        <div className="mx-auto max-w-6xl space-y-6">
-          <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-md shadow-[0_24px_80px_rgba(0,0,0,0.25)]">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-200">
-                Link Manager
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold text-white sm:text-3xl">
-                Conference and Article Website Links
-              </h2>
-            </div>
-            <button
-              onClick={() => setCurrentView("dashboard")}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              <ArrowLeft size={16} /> Back to Dashboard
-            </button>
-          </header>
-
-          <section className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-md">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
-                    Conference website
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">
-                    Add conference page link
-                  </h3>
-                </div>
-                <Globe className="text-sky-300" size={22} />
-              </div>
-              <p className="mt-3 text-sm text-slate-300">
-                Store the official conference website for quick access later.
-              </p>
-              <div className="mt-5 space-y-3">
-                <input
-                  value={conferenceLinkUrl}
-                  onChange={(event) => setConferenceLinkUrl(event.target.value)}
-                  placeholder="https://conference.example.com"
-                  className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400"
-                />
-                <button
-                  onClick={addConferenceLink}
-                  disabled={!conferenceLinkUrl.trim()}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Plus size={15} /> Save Conference Link
-                </button>
-              </div>
-              <div className="mt-5 space-y-2">
-                {conferenceLinks.length === 0 ? (
-                  <p className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-4 py-4 text-sm text-slate-400">
-                    No conference website links saved yet.
-                  </p>
-                ) : (
-                  conferenceLinks.map((link) => (
-                    <div
-                      key={link.id}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
-                    >
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="min-w-0 flex items-center gap-2 truncate text-sm font-medium text-sky-100 hover:text-white"
-                      >
-                        <ExternalLink size={14} className="shrink-0" />
-                        <span className="truncate">{link.url}</span>
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => removeLink(link.id)}
-                        className="rounded-full p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-md">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
-                    Article website
-                  </p>
-                  <h3 className="mt-2 text-xl font-semibold text-white">
-                    Add article page link
-                  </h3>
-                </div>
-                <FileText className="text-emerald-300" size={22} />
-              </div>
-              <p className="mt-3 text-sm text-slate-300">
-                Store the article, paper, or publisher website for each record.
-              </p>
-              <div className="mt-5 space-y-3">
-                <input
-                  value={articleLinkUrl}
-                  onChange={(event) => setArticleLinkUrl(event.target.value)}
-                  placeholder="https://publisher.example.com/article"
-                  className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-400"
-                />
-                <button
-                  onClick={addArticleLink}
-                  disabled={!articleLinkUrl.trim()}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Plus size={15} /> Save Article Link
-                </button>
-              </div>
-              <div className="mt-5 space-y-2">
-                {articleLinks.length === 0 ? (
-                  <p className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-4 py-4 text-sm text-slate-400">
-                    No article website links saved yet.
-                  </p>
-                ) : (
-                  articleLinks.map((link) => (
-                    <div
-                      key={link.id}
-                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
-                    >
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="min-w-0 flex items-center gap-2 truncate text-sm font-medium text-emerald-100 hover:text-white"
-                      >
-                        <ExternalLink size={14} className="shrink-0" />
-                        <span className="truncate">{link.url}</span>
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => removeLink(link.id)}
-                        className="rounded-full p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </section>
-        </div>
-      </main>
-    );
-  }
-
   return (
-    <main className="animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
+    <main className="conference-light animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1348,6 +1208,64 @@ export default function App() {
         </div>
       )}
 
+      {activeLinkEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-white/20 bg-gray-900/70 backdrop-blur-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => {
+                setActiveLinkEntry(null);
+                setLinkConferenceUrl("");
+                setLinkArticleUrl("");
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X size={20} />
+            </button>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-200">
+              Link
+            </p>
+            <h3 className="mt-2 text-xl font-semibold text-white">
+              {activeLinkEntry.conferenceName}
+            </h3>
+            <p className="mt-2 text-sm text-gray-300">
+              Add a conference website link and an article website link for this record.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">
+                  Conference website link
+                </span>
+                <input
+                  value={linkConferenceUrl}
+                  onChange={(event) => setLinkConferenceUrl(event.target.value)}
+                  placeholder="https://conference.example.com"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">
+                  Article website link
+                </span>
+                <input
+                  value={linkArticleUrl}
+                  onChange={(event) => setLinkArticleUrl(event.target.value)}
+                  placeholder="https://publisher.example.com/article"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                />
+              </label>
+
+              <button
+                onClick={saveLinkEditor}
+                className="w-full rounded-md bg-teal-700 hover:bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition"
+              >
+                Save Link
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-7xl flex flex-col md:flex-row gap-8 items-start">
         {/* Left Sidebar Actions */}
         <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
@@ -1379,34 +1297,6 @@ export default function App() {
               </span>
             </button>
 
-            <button
-              onClick={() => setCurrentView("links")}
-              className="w-full flex justify-between items-center rounded-md border border-white/20 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              <span className="flex gap-2 items-center">
-                <Link2 size={16} /> Links
-              </span>
-            </button>
-          </div>
-
-          <div className="rounded-3xl border border-white/15 bg-white/5 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-md space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-teal-200">
-                Links
-              </h3>
-              <p className="mt-2 text-xs text-gray-400">
-                Add conference and article website links on a dedicated page.
-              </p>
-            </div>
-            <button
-              onClick={() => setCurrentView("links")}
-              className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
-            >
-              <span className="flex items-center gap-2">
-                <Link2 size={16} /> Open Link Manager
-              </span>
-              <ExternalLink size={14} className="text-teal-300" />
-            </button>
           </div>
         </div>
 
@@ -1770,7 +1660,7 @@ export default function App() {
                   sortedEntries.map((entry, index) => (
                     <tr
                       key={entry.id}
-                      className={`border-t border-white/20 text-gray-200 ${entry.status === "Accepted" ? "bg-amber-900/25 border-l-4 border-l-amber-500/70" : entry.status === "Presented" ? "bg-sky-950/20 border-l-4 border-l-sky-500/60" : entry.status === "Published" ? "bg-indigo-950/20 border-l-4 border-l-indigo-500/60" : ""}`}
+                      className={`border-t border-white/20 text-gray-200 ${entry.status === "Accepted" && (entry.isRegistered ?? entry.isRegisteteal) ? "bg-amber-50/80 border-l-4 border-l-amber-300" : entry.status === "Accepted" ? "bg-rose-50/80 border-l-4 border-l-rose-300" : entry.status === "Presented" ? "bg-emerald-50/80 border-l-4 border-l-emerald-300" : entry.status === "Published" ? "bg-sky-50/80 border-l-4 border-l-sky-300" : ""}`}
                     >
                       <td className="px-4 py-3 font-medium text-white">
                         {index + 1}
@@ -1788,7 +1678,7 @@ export default function App() {
                         <div className="flex flex-col gap-1 items-start">
                           <div className="flex items-center gap-2">
                             <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate)}`}
+                              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClassName(entry.status, entry.publicationDate, Boolean(entry.isRegistered ?? entry.isRegisteteal))}`}
                             >
                               {entry.publicationDate
                                 ? "Published"
@@ -1823,6 +1713,15 @@ export default function App() {
                       <td className="px-4 py-3">{entry.conferenceCategory}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openLinkEditor(entry)}
+                            className="rounded-md border border-teal-500/60 px-3 py-1.5 text-xs font-medium text-teal-200 transition hover:bg-teal-500/20 cursor-pointer"
+                          >
+                            <span className="flex items-center gap-1">
+                              <Link2 size={12} /> Link
+                            </span>
+                          </button>
                           <button
                             type="button"
                             onClick={() => editEntry(entry)}
