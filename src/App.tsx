@@ -40,6 +40,15 @@ type ConferenceLink = {
   kind: "conference" | "article";
 };
 
+type PresentationSchedule = {
+  entryId: number;
+  meetingLink: string;
+  presentationDate: string;
+  presentationTime: string;
+  paperIds: string;
+  durationMinutes: string;
+};
+
 const emptyForm: ConferenceForm = {
   conferenceName: "",
   conferenceDate: "",
@@ -116,6 +125,12 @@ export default function App() {
     const saved = localStorage.getItem("collection_links_SIMAR");
     return saved ? JSON.parse(saved).map(normalizeConferenceLink) : [];
   });
+  const [presentationSchedules, setPresentationSchedules] = useState<
+    PresentationSchedule[]
+  >(() => {
+    const saved = localStorage.getItem("presentation_schedules_SIMAR");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [categoryOptions, setCategoryOptions] = useState<string[]>(() => {
     const saved = localStorage.getItem("conference_categories_SIMAR");
     return saved ? JSON.parse(saved) : defaultCategories;
@@ -125,6 +140,15 @@ export default function App() {
   const [activeLinkEntry, setActiveLinkEntry] = useState<ConferenceEntry | null>(null);
   const [linkConferenceUrl, setLinkConferenceUrl] = useState("");
   const [linkArticleUrls, setLinkArticleUrls] = useState<string[]>([]);
+  const [activePresentationEntry, setActivePresentationEntry] = useState<ConferenceEntry | null>(null);
+  const [presentationForm, setPresentationForm] = useState<PresentationSchedule>({
+    entryId: 0,
+    meetingLink: "",
+    presentationDate: "",
+    presentationTime: "",
+    paperIds: "",
+    durationMinutes: "",
+  });
 
   const [currentUser, setCurrentUser] = useState<string>("SIMAR");
   const [usernameInput, setUsernameInput] = useState<string>("SIMAR");
@@ -382,6 +406,13 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("conference_categories_SIMAR", JSON.stringify(categoryOptions));
   }, [categoryOptions]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "presentation_schedules_SIMAR",
+      JSON.stringify(presentationSchedules),
+    );
+  }, [presentationSchedules]);
 
   const getUserKey = (base: string) =>
     currentUser ? `${base}_${currentUser}` : base;
@@ -939,6 +970,24 @@ export default function App() {
     setLinkArticleUrls(articleUrls);
   };
 
+  const activeEntryLinks = activeLinkEntry
+    ? collectionLinks.filter((link) => link.entryId === activeLinkEntry.id)
+    : [];
+
+  const openPresentationSchedule = (entry: ConferenceEntry) => {
+    const existing = presentationSchedules.find((schedule) => schedule.entryId === entry.id);
+
+    setActivePresentationEntry(entry);
+    setPresentationForm({
+      entryId: entry.id,
+      meetingLink: existing?.meetingLink || "",
+      presentationDate: existing?.presentationDate || entry.presentationDate || "",
+      presentationTime: existing?.presentationTime || entry.presentationTime || "",
+      paperIds: existing?.paperIds || "",
+      durationMinutes: existing?.durationMinutes || "",
+    });
+  };
+
   const saveLinkEditor = () => {
     if (!activeLinkEntry) return;
 
@@ -974,6 +1023,42 @@ export default function App() {
     setLinkConferenceUrl("");
     setLinkArticleUrls([]);
     toast.success("Links saved for this conference.");
+  };
+
+  const savePresentationSchedule = () => {
+    if (!activePresentationEntry) return;
+    if (
+      !presentationForm.meetingLink.trim() ||
+      !presentationForm.presentationDate.trim() ||
+      !presentationForm.presentationTime.trim() ||
+      !presentationForm.paperIds.trim() ||
+      !presentationForm.durationMinutes.trim()
+    ) {
+      toast.error("Please fill all presentation schedule fields.");
+      return;
+    }
+
+    setPresentationSchedules((previous) => {
+      const filtered = previous.filter(
+        (schedule) => schedule.entryId !== activePresentationEntry.id,
+      );
+      return [...filtered, presentationForm];
+    });
+
+    setEntries((previous) =>
+      previous.map((entry) =>
+        entry.id === activePresentationEntry.id
+          ? {
+              ...entry,
+              presentationDate: presentationForm.presentationDate,
+              presentationTime: presentationForm.presentationTime,
+            }
+          : entry,
+      ),
+    );
+
+    setActivePresentationEntry(null);
+    toast.success("Presentation schedule saved.");
   };
 
   const openCategoryEditor = () => {
@@ -1320,11 +1405,153 @@ export default function App() {
                 </div>
               </label>
 
+              {activeEntryLinks.length > 0 && (
+                <div className="rounded-2xl border border-white/20 bg-black/20 p-4">
+                  <p className="text-sm font-semibold text-white">Saved links</p>
+                  <div className="mt-3 space-y-2">
+                    {activeEntryLinks.map((link) => (
+                      <a
+                        key={link.id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-sky-100 hover:text-white hover:bg-white/10 transition truncate"
+                      >
+                        {link.label}: {link.url}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={saveLinkEditor}
                 className="w-full rounded-md bg-teal-700 hover:bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition"
               >
-                Save Link
+                {activeEntryLinks.length > 0 ? "Edit Link" : "Save Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activePresentationEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-gray-900/70 backdrop-blur-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => setActivePresentationEntry(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X size={20} />
+            </button>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
+              Presentation Schedule
+            </p>
+            <h3 className="mt-2 text-xl font-semibold text-white">
+              {activePresentationEntry.conferenceName}
+            </h3>
+            <p className="mt-2 text-sm text-gray-300">
+              Add the meeting link, date, time, paper IDs, and duration.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Meeting link</span>
+                <input
+                  value={presentationForm.meetingLink}
+                  onChange={(event) =>
+                    setPresentationForm((previous) => ({
+                      ...previous,
+                      meetingLink: event.target.value,
+                    }))
+                  }
+                  placeholder="https://meet.google.com/..."
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                />
+              </label>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-gray-200">Date</span>
+                  <input
+                    type="date"
+                    value={presentationForm.presentationDate}
+                    onChange={(event) =>
+                      setPresentationForm((previous) => ({
+                        ...previous,
+                        presentationDate: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-gray-200">Time</span>
+                  <input
+                    type="time"
+                    value={presentationForm.presentationTime}
+                    onChange={(event) =>
+                      setPresentationForm((previous) => ({
+                        ...previous,
+                        presentationTime: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                  />
+                </label>
+              </div>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Paper IDs</span>
+                <textarea
+                  value={presentationForm.paperIds}
+                  onChange={(event) =>
+                    setPresentationForm((previous) => ({
+                      ...previous,
+                      paperIds: event.target.value,
+                    }))
+                  }
+                  placeholder="e.g. Paper 1, Paper 2"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                  rows={2}
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Duration in minutes</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={presentationForm.durationMinutes}
+                  onChange={(event) =>
+                    setPresentationForm((previous) => ({
+                      ...previous,
+                      durationMinutes: event.target.value,
+                    }))
+                  }
+                  placeholder="e.g. 15"
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                />
+              </label>
+
+              {presentationSchedules.some((schedule) => schedule.entryId === activePresentationEntry.id) && (
+                <div className="rounded-2xl border border-white/15 bg-black/20 p-4 text-sm text-gray-200 space-y-1">
+                  <p className="font-semibold text-white">Saved schedule</p>
+                  <p>Link: {presentationForm.meetingLink || "-"}</p>
+                  <p>Date: {presentationForm.presentationDate || "-"}</p>
+                  <p>Time: {presentationForm.presentationTime || "-"}</p>
+                  <p>Paper IDs: {presentationForm.paperIds || "-"}</p>
+                  <p>Duration: {presentationForm.durationMinutes || "-"} minutes</p>
+                </div>
+              )}
+
+              <button
+                onClick={savePresentationSchedule}
+                className="w-full rounded-md bg-sky-700 hover:bg-sky-600 px-4 py-2 text-sm font-semibold text-white transition"
+              >
+                {presentationSchedules.some((schedule) => schedule.entryId === activePresentationEntry.id)
+                  ? "Update Schedule"
+                  : "Save Schedule"}
               </button>
             </div>
           </div>
@@ -1840,6 +2067,25 @@ export default function App() {
                             Delete
                           </button>
                         </div>
+                        {entry.status === "Accepted" &&
+                          (entry.isRegistered ?? entry.isRegisteteal) && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openPresentationSchedule(entry)}
+                                className="rounded-md border border-sky-500/60 px-3 py-1.5 text-xs font-medium text-sky-200 transition hover:bg-sky-500/20 cursor-pointer"
+                              >
+                                Presentation Schedule
+                              </button>
+                              {presentationSchedules.some(
+                                (schedule) => schedule.entryId === entry.id,
+                              ) && (
+                                <span className="rounded-full bg-sky-100 px-2.5 py-1 text-[10px] font-semibold text-sky-800 ring-1 ring-sky-200">
+                                  Saved
+                                </span>
+                              )}
+                            </div>
+                          )}
                       </td>
                     </tr>
                   ))
