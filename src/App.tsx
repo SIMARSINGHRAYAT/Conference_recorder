@@ -43,6 +43,7 @@ type ConferenceLink = {
 type PresentationSchedule = {
   entryId: number;
   meetingLink: string;
+  meetingTime: string;
   presentationDate: string;
   presentationTime: string;
   paperIds: string;
@@ -65,6 +66,7 @@ const emptyForm: ConferenceForm = {
 type FutureConference = {
   id: number;
   conferenceName: string;
+  conferenceUrl: string;
   submissionDeadline: string;
   notes: string;
 };
@@ -88,6 +90,14 @@ const normalizeConferenceLink = (link: any): ConferenceLink => ({
   kind: link.kind === "conference" ? "conference" : "article",
 });
 
+const normalizeFutureConference = (conference: any): FutureConference => ({
+  id: conference.id,
+  conferenceName: conference.conferenceName || "",
+  conferenceUrl: conference.conferenceUrl || "",
+  submissionDeadline: conference.submissionDeadline || "",
+  notes: conference.notes || "",
+});
+
 export default function App() {
   const [currentView, setCurrentView] = useState<View>("welcome");
 
@@ -100,10 +110,11 @@ export default function App() {
 
   const [futureConfs, setFutureConfs] = useState<FutureConference[]>(() => {
     const saved = localStorage.getItem("future_conferences_SIMAR");
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved).map(normalizeFutureConference) : [];
   });
   const [futureForm, setFutureForm] = useState({
     conferenceName: "",
+    conferenceUrl: "",
     submissionDeadline: "",
     notes: "",
   });
@@ -144,6 +155,7 @@ export default function App() {
   const [presentationForm, setPresentationForm] = useState<PresentationSchedule>({
     entryId: 0,
     meetingLink: "",
+    meetingTime: "",
     presentationDate: "",
     presentationTime: "",
     paperIds: "",
@@ -716,7 +728,6 @@ export default function App() {
   }, [collectionLinks, currentUser, isDataLoaded]);
 
   useEffect(() => {
-    // In-app notification checker every minute
     const checkReminders = setInterval(() => {
       const now = new Date();
       let updated = false;
@@ -773,7 +784,6 @@ export default function App() {
       return;
     }
 
-    // Request browser notification permission
     if (
       "Notification" in window &&
       window.Notification.permission !== "denied" &&
@@ -831,23 +841,38 @@ export default function App() {
 
   const submitEntry = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const nextForm: ConferenceForm = {
+      ...form,
+      isRegistered: form.status === "Accepted" ? Boolean(form.isRegistered) : false,
+      presentationDate: form.status === "Accepted" ? form.presentationDate : "",
+      presentationTime: form.status === "Accepted" ? form.presentationTime : "",
+    };
+
     if (editingId !== null) {
+      if (nextForm.status !== "Accepted") {
+        setPresentationSchedules((previous) =>
+          previous.filter((schedule) => schedule.entryId !== editingId),
+        );
+      }
+
       setEntries((previous) =>
         previous.map((entry) =>
-          entry.id === editingId ? { ...form, id: editingId } : entry,
+          entry.id === editingId ? { ...nextForm, id: editingId } : entry,
         ),
       );
       setEditingId(null);
     } else {
-      setEntries((previous) => [...previous, { id: nextId, ...form }]);
+      setEntries((previous) => [...previous, { id: nextId, ...nextForm }]);
     }
+
     setForm(emptyForm);
   };
 
   const submitFutureEntry = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFutureConfs((prev) => [...prev, { id: nextFutureId, ...futureForm }]);
-    setFutureForm({ conferenceName: "", submissionDeadline: "", notes: "" });
+    setFutureForm({ conferenceName: "", conferenceUrl: "", submissionDeadline: "", notes: "" });
   };
 
   const removeFutureEntry = (id: number) => {
@@ -981,6 +1006,7 @@ export default function App() {
     setPresentationForm({
       entryId: entry.id,
       meetingLink: existing?.meetingLink || "",
+      meetingTime: existing?.meetingTime || "",
       presentationDate: existing?.presentationDate || entry.presentationDate || "",
       presentationTime: existing?.presentationTime || entry.presentationTime || "",
       paperIds: existing?.paperIds || "",
@@ -1029,10 +1055,10 @@ export default function App() {
     if (!activePresentationEntry) return;
     if (
       !presentationForm.meetingLink.trim() ||
+      !presentationForm.meetingTime.trim() ||
       !presentationForm.presentationDate.trim() ||
       !presentationForm.presentationTime.trim() ||
-      !presentationForm.paperIds.trim() ||
-      !presentationForm.durationMinutes.trim()
+      !presentationForm.paperIds.trim()
     ) {
       toast.error("Please fill all presentation schedule fields.");
       return;
@@ -1080,7 +1106,7 @@ export default function App() {
 
   if (currentView === "welcome") {
     return (
-      <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-950 via-teal-900 to-teal-900 px-4 font-sans relative overflow-hidden">
+      <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-stone-100 via-amber-50 to-stone-200 px-4 font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
         <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-teal-500/20 shadow-2xl">
           <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
@@ -1116,7 +1142,7 @@ export default function App() {
 
   if (currentView === "add-future") {
     return (
-      <main className="conference-light animate-bg min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
+      <main className="conference-light animate-bg min-h-screen bg-gradient-to-br from-stone-100 to-stone-200 px-4 py-8 text-white sm:px-8 font-sans">
         <ToastContainer />
         <div className="mx-auto max-w-4xl space-y-6">
           <header className="flex items-center gap-4">
@@ -1149,6 +1175,23 @@ export default function App() {
                   }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                   placeholder="e.g. CVPR 2028"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">
+                  Conference website link
+                </span>
+                <input
+                  value={futureForm.conferenceUrl}
+                  onChange={(e) =>
+                    setFutureForm((prev) => ({
+                      ...prev,
+                      conferenceUrl: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                  placeholder="https://conference.example.com"
                 />
               </label>
 
@@ -1208,33 +1251,49 @@ export default function App() {
                 No upcoming conferences planned.
               </div>
             ) : (
-              <div className="divide-y divide-white/10">
-                {futureConfs.map((conf) => (
-                  <div
-                    key={conf.id}
-                    className="p-6 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center"
-                  >
-                    <div>
-                      <h4 className="font-bold text-lg text-white">
-                        {conf.conferenceName}
-                      </h4>
-                      <p className="text-sm text-teal-300">
-                        Deadline: {conf.submissionDeadline}
-                      </p>
-                      {conf.notes && (
-                        <p className="text-sm text-gray-400 mt-2">
-                          {conf.notes}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => removeFutureEntry(conf.id)}
-                      className="text-teal-400 hover:text-teal-300 text-sm font-medium transition cursor-pointer"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse text-sm bg-black/20">
+                  <thead className="bg-white/10 text-left text-white">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Conference</th>
+                      <th className="px-4 py-3 font-semibold">Website</th>
+                      <th className="px-4 py-3 font-semibold">Deadline</th>
+                      <th className="px-4 py-3 font-semibold">Notes</th>
+                      <th className="px-4 py-3 font-semibold">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {futureConfs.map((conf) => (
+                      <tr key={conf.id} className="border-t border-white/20 text-white">
+                        <td className="px-4 py-3 font-medium">{conf.conferenceName}</td>
+                        <td className="px-4 py-3">
+                          {conf.conferenceUrl ? (
+                            <a
+                              href={conf.conferenceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sky-300 underline underline-offset-2 hover:text-sky-200"
+                            >
+                              {conf.conferenceUrl}
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">{conf.submissionDeadline}</td>
+                        <td className="px-4 py-3 text-gray-300">{conf.notes || "-"}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => removeFutureEntry(conf.id)}
+                            className="text-teal-300 hover:text-teal-200 text-sm font-medium transition cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -1244,7 +1303,7 @@ export default function App() {
   }
 
   return (
-    <main className="conference-light animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
+    <main className="conference-light animate-bg relative min-h-screen bg-gradient-to-br from-stone-100 to-stone-200 px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
       {showNotifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1451,7 +1510,7 @@ export default function App() {
               {activePresentationEntry.conferenceName}
             </h3>
             <p className="mt-2 text-sm text-gray-300">
-              Add the meeting link, date, time, paper IDs, and duration.
+              Add the meeting link, meeting start time, presentation time, date, and paper IDs.
             </p>
 
             <div className="mt-5 space-y-4">
@@ -1466,6 +1525,21 @@ export default function App() {
                     }))
                   }
                   placeholder="https://meet.google.com/..."
+                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-gray-200">Meeting start time</span>
+                <input
+                  type="time"
+                  value={presentationForm.meetingTime}
+                  onChange={(event) =>
+                    setPresentationForm((previous) => ({
+                      ...previous,
+                      meetingTime: event.target.value,
+                    }))
+                  }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 />
               </label>
@@ -1517,31 +1591,28 @@ export default function App() {
                 />
               </label>
 
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-gray-200">Duration in minutes</span>
-                <input
-                  type="number"
-                  min="1"
-                  value={presentationForm.durationMinutes}
-                  onChange={(event) =>
-                    setPresentationForm((previous) => ({
-                      ...previous,
-                      durationMinutes: event.target.value,
-                    }))
-                  }
-                  placeholder="e.g. 15"
-                  className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
-                />
-              </label>
-
               {presentationSchedules.some((schedule) => schedule.entryId === activePresentationEntry.id) && (
                 <div className="rounded-2xl border border-white/15 bg-black/20 p-4 text-sm text-gray-200 space-y-1">
                   <p className="font-semibold text-white">Saved schedule</p>
-                  <p>Link: {presentationForm.meetingLink || "-"}</p>
+                  <p>
+                    Link:{" "}
+                    {presentationForm.meetingLink ? (
+                      <a
+                        href={presentationForm.meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sky-300 underline underline-offset-2 hover:text-sky-200"
+                      >
+                        Open meeting link
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </p>
+                  <p>Meeting start: {presentationForm.meetingTime || "-"}</p>
                   <p>Date: {presentationForm.presentationDate || "-"}</p>
-                  <p>Time: {presentationForm.presentationTime || "-"}</p>
+                  <p>Presentation time: {presentationForm.presentationTime || "-"}</p>
                   <p>Paper IDs: {presentationForm.paperIds || "-"}</p>
-                  <p>Duration: {presentationForm.durationMinutes || "-"} minutes</p>
                 </div>
               )}
 
@@ -1789,10 +1860,16 @@ export default function App() {
                 <select
                   value={form.status}
                   onChange={(event) =>
-                    setForm((previous) => ({
-                      ...previous,
-                      status: event.target.value,
-                    }))
+                    setForm((previous) => {
+                      const nextStatus = event.target.value;
+                      return {
+                        ...previous,
+                        status: nextStatus,
+                        isRegistered: nextStatus === "Accepted" ? previous.isRegistered : false,
+                        presentationDate: nextStatus === "Accepted" ? previous.presentationDate : "",
+                        presentationTime: nextStatus === "Accepted" ? previous.presentationTime : "",
+                      };
+                    })
                   }
                   className="w-full rounded-md border border-white/30 bg-black px-3 py-2 text-white outline-none transition focus:border-teal-400"
                 >

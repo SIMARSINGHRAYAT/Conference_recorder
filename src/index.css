@@ -10,9 +10,10 @@
     min-width: 320px;
     font-family: "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
     background:
-      radial-gradient(circle at top, rgba(148, 163, 184, 0.15), transparent 30%),
-      linear-gradient(180deg, #050505 0%, #000000 100%);
-    color: #e5e7eb;
+      radial-gradient(circle at top left, rgba(255, 244, 214, 0.72), transparent 28%),
+      radial-gradient(circle at top right, rgba(243, 232, 202, 0.55), transparent 26%),
+      linear-gradient(180deg, #f8f1df 0%, #efe2c1 100%);
+    color: #1f2937;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -23,15 +24,15 @@
   }
 
   ::selection {
-    background: rgba(148, 163, 184, 0.3);
-    color: #ffffff;
+    background: rgba(245, 224, 170, 0.75);
+    color: #111827;
   }
 
   .conference-light {
-    color: #e5e7eb;
+    color: #1f2937;
     background:
-      radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 28%),
-      linear-gradient(180deg, #050505 0%, #000000 100%) !important;
+      radial-gradient(circle at top left, rgba(255, 250, 235, 0.95), transparent 28%),
+      linear-gradient(180deg, #fdf7ea 0%, #f3e6c7 100%) !important;
   }
 
   .conference-light input,
