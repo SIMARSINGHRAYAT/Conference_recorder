@@ -53,36 +53,24 @@
   body::after {
     content: "";
     position: fixed;
-    inset: -20%;
+    inset: 0;
     pointer-events: none;
     z-index: 0;
   }
 
   body::before {
-    background:
-      repeating-linear-gradient(
-        120deg,
-        rgba(34, 211, 238, 0.08) 0 2px,
-        transparent 2px 140px
-      ),
-      repeating-linear-gradient(
-        60deg,
-        rgba(168, 85, 247, 0.07) 0 1px,
-        transparent 1px 110px
-      );
-    filter: blur(0.25px);
-    opacity: 0.75;
-    animation: neonFlow 22s linear infinite;
+    background-image: url("/neon-background.svg");
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
+    opacity: 1;
   }
 
   body::after {
     background:
-      radial-gradient(circle at 20% 35%, rgba(34, 211, 238, 0.16), transparent 16%),
-      radial-gradient(circle at 70% 25%, rgba(168, 85, 247, 0.15), transparent 18%),
-      radial-gradient(circle at 65% 75%, rgba(236, 72, 153, 0.14), transparent 17%),
-      radial-gradient(circle at 90% 60%, rgba(59, 130, 246, 0.12), transparent 14%);
-    mix-blend-mode: screen;
-    animation: neonPulse 14s ease-in-out infinite;
+      radial-gradient(circle at 50% 50%, transparent 0 45%, rgba(0, 0, 0, 0.12) 62%, rgba(0, 0, 0, 0.28) 100%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2));
+    mix-blend-mode: multiply;
   }
 
   #root {
@@ -129,24 +117,3 @@
   }
 }
 
-@keyframes neonFlow {
-  0% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-  50% {
-    transform: translate3d(3%, -2%, 0) rotate(2deg);
-  }
-  100% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-}
-
-@keyframes neonPulse {
-  0%,
-  100% {
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 1;
-  }
-}
