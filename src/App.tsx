@@ -3,12 +3,16 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
   Bell,
+  ExternalLink,
   Download,
   X,
   Search,
   Check,
   Plus,
   ArrowLeft,
+  Globe,
+  FileText,
+  Link2,
 } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -18,6 +22,7 @@ type ConferenceEntry = {
   conferenceName: string;
   conferenceDate: string;
   status: string;
+  isRegistered?: boolean;
   isRegisteteal?: boolean;
   presentationDate?: string;
   presentationTime?: string;
@@ -30,11 +35,18 @@ type ConferenceEntry = {
 
 type ConferenceForm = Omit<ConferenceEntry, "id">;
 
+type ConferenceLink = {
+  id: number;
+  label: string;
+  url: string;
+  kind: "conference" | "article";
+};
+
 const emptyForm: ConferenceForm = {
   conferenceName: "",
   conferenceDate: "",
   status: "Accepted",
-  isRegisteteal: false,
+  isRegistered: false,
   presentationDate: "",
   presentationTime: "",
   publicationDate: "",
@@ -50,10 +62,23 @@ type FutureConference = {
   notes: string;
 };
 
-const statuses = ["Accepted", "Presented"];
+const statuses = ["Accepted", "Presented", "Published"];
 const categories = ["IEEE", "Springers", "CRC"];
 
-type View = "welcome" | "dashboard" | "add-future";
+type View = "welcome" | "dashboard" | "add-future" | "links";
+
+const normalizeConferenceEntry = (entry: any): ConferenceEntry => ({
+  ...entry,
+  status: entry.status || "Accepted",
+  isRegistered: Boolean(entry.isRegistered ?? entry.isRegisteteal ?? false),
+});
+
+const normalizeConferenceLink = (link: any): ConferenceLink => ({
+  id: link.id,
+  label: link.label || "Untitled link",
+  url: link.url || "",
+  kind: link.kind === "conference" ? "conference" : "article",
+});
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>("welcome");
@@ -61,7 +86,7 @@ export default function App() {
   const [form, setForm] = useState<ConferenceForm>(emptyForm);
   const [entries, setEntries] = useState<ConferenceEntry[]>(() => {
     const saved = localStorage.getItem("conference_entries_SIMAR");
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved).map(normalizeConferenceEntry) : [];
   });
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -88,12 +113,11 @@ export default function App() {
     notifyTime: "",
   });
 
-  const [linkForm, setLinkForm] = useState({ label: "", url: "" });
-  const [collectionLinks, setCollectionLinks] = useState<
-    { id: number; label: string; url: string }[]
-  >(() => {
+  const [conferenceLinkUrl, setConferenceLinkUrl] = useState("");
+  const [articleLinkUrl, setArticleLinkUrl] = useState("");
+  const [collectionLinks, setCollectionLinks] = useState<ConferenceLink[]>(() => {
     const saved = localStorage.getItem("collection_links_SIMAR");
-    return saved ? JSON.parse(saved) : [];
+    return saved ? JSON.parse(saved).map(normalizeConferenceLink) : [];
   });
 
   const [currentUser, setCurrentUser] = useState<string>("SIMAR");
@@ -350,7 +374,7 @@ export default function App() {
     const suffix = `_${active}`;
 
     const e = localStorage.getItem(`conference_entries${suffix}`);
-    setEntries(e ? JSON.parse(e) : []);
+    setEntries(e ? JSON.parse(e).map(normalizeConferenceEntry) : []);
 
     const f = localStorage.getItem(`future_conferences${suffix}`);
     setFutureConfs(f ? JSON.parse(f) : []);
@@ -359,13 +383,18 @@ export default function App() {
     setInAppNotifications(n ? JSON.parse(n) : []);
 
     const c = localStorage.getItem(`collection_links${suffix}`);
-    setCollectionLinks(c ? JSON.parse(c) : []);
+    setCollectionLinks(c ? JSON.parse(c).map(normalizeConferenceLink) : []);
 
     setIsDataLoaded(true);
     setCurrentView("dashboard");
   };
 
   const handleLoadSampleData = () => {
+    if (localStorage.getItem("conference_entries_SIMAR")) {
+      toast.info("Existing data is already stored. Sample data was not loaded.");
+      return;
+    }
+
     const sampleData = [
       {
         id: 1,
@@ -772,7 +801,10 @@ export default function App() {
   const editEntry = (entry: ConferenceEntry) => {
     setEditingId(entry.id);
     const { id, ...formData } = entry;
-    setForm(formData);
+    setForm({
+      ...formData,
+      isRegistered: Boolean(entry.isRegistered ?? entry.isRegisteteal ?? false),
+    });
   };
 
   const removeEntry = (id: number) => {
@@ -808,12 +840,13 @@ export default function App() {
   };
 
   const statusClassName = (status: string, publicationDate: string) => {
-    if (publicationDate) return "bg-green-700 text-white ring-1 ring-green-600";
+    if (status === "Published" || publicationDate)
+      return "bg-sky-500/15 text-sky-100 ring-1 ring-sky-400/40";
     if (status === "Presented")
-      return "bg-green-200 text-green-900 ring-1 ring-green-300";
+      return "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/40";
     if (status === "Accepted")
-      return "bg-green-600 text-white ring-1 ring-green-500";
-    return "bg-red-600 text-white ring-1 ring-red-500";
+      return "bg-amber-400/15 text-amber-100 ring-1 ring-amber-300/50";
+    return "bg-slate-500/15 text-slate-100 ring-1 ring-slate-400/40";
   };
 
   const generatePDF = () => {
@@ -853,14 +886,34 @@ export default function App() {
     doc.save("conference-data.pdf");
   };
 
-  const handleAddLink = () => {
-    if (!linkForm.label.trim() || !linkForm.url.trim()) return;
+  const addConferenceLink = () => {
+    if (!conferenceLinkUrl.trim()) return;
     setCollectionLinks((prev) => [
       ...prev,
-      { id: Date.now(), label: linkForm.label, url: linkForm.url },
+      {
+        id: Date.now(),
+        label: "Conference website",
+        url: conferenceLinkUrl.trim(),
+        kind: "conference",
+      },
     ]);
-    setLinkForm({ label: "", url: "" });
-    toast.success("Link added successfully!");
+    setConferenceLinkUrl("");
+    toast.success("Conference website link saved!");
+  };
+
+  const addArticleLink = () => {
+    if (!articleLinkUrl.trim()) return;
+    setCollectionLinks((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        label: "Article website",
+        url: articleLinkUrl.trim(),
+        kind: "article",
+      },
+    ]);
+    setArticleLinkUrl("");
+    toast.success("Article website link saved!");
   };
 
   const removeLink = (id: number) => {
@@ -1032,6 +1085,165 @@ export default function App() {
     );
   }
 
+  if (currentView === "links") {
+    const conferenceLinks = collectionLinks.filter(
+      (link) => link.kind === "conference",
+    );
+    const articleLinks = collectionLinks.filter((link) => link.kind !== "conference");
+
+    return (
+      <main className="animate-bg min-h-screen bg-gradient-to-br from-slate-950 via-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
+        <ToastContainer />
+        <div className="mx-auto max-w-6xl space-y-6">
+          <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-md shadow-[0_24px_80px_rgba(0,0,0,0.25)]">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-200">
+                Link Manager
+              </p>
+              <h2 className="mt-1 text-2xl font-semibold text-white sm:text-3xl">
+                Conference and Article Website Links
+              </h2>
+            </div>
+            <button
+              onClick={() => setCurrentView("dashboard")}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              <ArrowLeft size={16} /> Back to Dashboard
+            </button>
+          </header>
+
+          <section className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-md">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
+                    Conference website
+                  </p>
+                  <h3 className="mt-2 text-xl font-semibold text-white">
+                    Add conference page link
+                  </h3>
+                </div>
+                <Globe className="text-sky-300" size={22} />
+              </div>
+              <p className="mt-3 text-sm text-slate-300">
+                Store the official conference website for quick access later.
+              </p>
+              <div className="mt-5 space-y-3">
+                <input
+                  value={conferenceLinkUrl}
+                  onChange={(event) => setConferenceLinkUrl(event.target.value)}
+                  placeholder="https://conference.example.com"
+                  className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-400"
+                />
+                <button
+                  onClick={addConferenceLink}
+                  disabled={!conferenceLinkUrl.trim()}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Plus size={15} /> Save Conference Link
+                </button>
+              </div>
+              <div className="mt-5 space-y-2">
+                {conferenceLinks.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-4 py-4 text-sm text-slate-400">
+                    No conference website links saved yet.
+                  </p>
+                ) : (
+                  conferenceLinks.map((link) => (
+                    <div
+                      key={link.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+                    >
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="min-w-0 flex items-center gap-2 truncate text-sm font-medium text-sky-100 hover:text-white"
+                      >
+                        <ExternalLink size={14} className="shrink-0" />
+                        <span className="truncate">{link.url}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => removeLink(link.id)}
+                        className="rounded-full p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-md">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
+                    Article website
+                  </p>
+                  <h3 className="mt-2 text-xl font-semibold text-white">
+                    Add article page link
+                  </h3>
+                </div>
+                <FileText className="text-emerald-300" size={22} />
+              </div>
+              <p className="mt-3 text-sm text-slate-300">
+                Store the article, paper, or publisher website for each record.
+              </p>
+              <div className="mt-5 space-y-3">
+                <input
+                  value={articleLinkUrl}
+                  onChange={(event) => setArticleLinkUrl(event.target.value)}
+                  placeholder="https://publisher.example.com/article"
+                  className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-400"
+                />
+                <button
+                  onClick={addArticleLink}
+                  disabled={!articleLinkUrl.trim()}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Plus size={15} /> Save Article Link
+                </button>
+              </div>
+              <div className="mt-5 space-y-2">
+                {articleLinks.length === 0 ? (
+                  <p className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-4 py-4 text-sm text-slate-400">
+                    No article website links saved yet.
+                  </p>
+                ) : (
+                  articleLinks.map((link) => (
+                    <div
+                      key={link.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
+                    >
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="min-w-0 flex items-center gap-2 truncate text-sm font-medium text-emerald-100 hover:text-white"
+                      >
+                        <ExternalLink size={14} className="shrink-0" />
+                        <span className="truncate">{link.url}</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => removeLink(link.id)}
+                        className="rounded-full p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="animate-bg relative min-h-screen bg-gradient-to-br from-teal-950 to-teal-900 px-4 py-8 text-white sm:px-8 font-sans">
       <ToastContainer />
@@ -1166,69 +1378,35 @@ export default function App() {
                 <Plus size={16} /> Add Conference for Further
               </span>
             </button>
+
+            <button
+              onClick={() => setCurrentView("links")}
+              className="w-full flex justify-between items-center rounded-md border border-white/20 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              <span className="flex gap-2 items-center">
+                <Link2 size={16} /> Links
+              </span>
+            </button>
           </div>
 
-          <div className="rounded-2xl border border-white/20 bg-black/40 backdrop-blur-sm p-4 space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-teal-300">
-              Article Collections
-            </h3>
-            <p className="text-xs text-gray-400">
-              Add links to your profiles (Google Scholar, ORCID, etc.).
-            </p>
-
-            <div className="flex flex-col gap-2">
-              <input
-                value={linkForm.label}
-                onChange={(e) =>
-                  setLinkForm({ ...linkForm, label: e.target.value })
-                }
-                placeholder="Label (e.g. Google Scholar)"
-                className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-teal-400 text-sm"
-              />
-              <input
-                value={linkForm.url}
-                onChange={(e) =>
-                  setLinkForm({ ...linkForm, url: e.target.value })
-                }
-                placeholder="URL (e.g. https://scholar.google.com/...)"
-                className="w-full rounded-md border border-white/30 bg-black/50 px-3 py-2 text-white outline-none transition focus:border-teal-400 text-sm"
-              />
-              <button
-                onClick={handleAddLink}
-                disabled={!linkForm.label || !linkForm.url}
-                className="w-full flex justify-center items-center gap-2 rounded-md bg-teal-700 hover:bg-teal-600 disabled:opacity-50 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer"
-              >
-                <Plus size={14} /> Add Link
-              </button>
+          <div className="rounded-3xl border border-white/15 bg-white/5 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-md space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-teal-200">
+                Links
+              </h3>
+              <p className="mt-2 text-xs text-gray-400">
+                Add conference and article website links on a dedicated page.
+              </p>
             </div>
-
-            {collectionLinks.length > 0 && (
-              <div className="mt-4 space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
-                {collectionLinks.map((link) => (
-                  <div
-                    key={link.id}
-                    className="flex flex-col gap-1 p-2 rounded-md border border-white/10 bg-white/5"
-                  >
-                    <div className="flex justify-between items-start">
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-medium text-teal-200 hover:text-teal-100 hover:underline truncate"
-                      >
-                        {link.label}
-                      </a>
-                      <button
-                        onClick={() => removeLink(link.id)}
-                        className="text-gray-400 hover:text-teal-400 transition"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <button
+              onClick={() => setCurrentView("links")}
+              className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              <span className="flex items-center gap-2">
+                <Link2 size={16} /> Open Link Manager
+              </span>
+              <ExternalLink size={14} className="text-teal-300" />
+            </button>
           </div>
         </div>
 
@@ -1411,23 +1589,23 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={form.isRegisteteal || false}
+                      checked={form.isRegistered || false}
                       onChange={(event) =>
                         setForm((previous) => ({
                           ...previous,
-                          isRegisteteal: event.target.checked,
+                          isRegistered: event.target.checked,
                         }))
                       }
                       className="h-4 w-4 rounded border-white/30 bg-black text-teal-400 accent-teal-600"
                     />
                     <span className="text-sm font-medium text-gray-200">
-                      Registeteal
+                      Registered
                     </span>
                   </div>
                 </label>
               )}
 
-              {form.status === "Accepted" && form.isRegisteteal && (
+              {form.status === "Accepted" && form.isRegistered && (
                 <>
                   <label className="space-y-1">
                     <span className="text-sm font-medium text-gray-200">
@@ -1592,7 +1770,7 @@ export default function App() {
                   sortedEntries.map((entry, index) => (
                     <tr
                       key={entry.id}
-                      className={`border-t border-white/20 text-gray-200 ${entry.status === "Accepted" ? "bg-amber-900/40 border-l-4 border-l-amber-500" : ""}`}
+                      className={`border-t border-white/20 text-gray-200 ${entry.status === "Accepted" ? "bg-amber-900/25 border-l-4 border-l-amber-500/70" : entry.status === "Presented" ? "bg-sky-950/20 border-l-4 border-l-sky-500/60" : entry.status === "Published" ? "bg-indigo-950/20 border-l-4 border-l-indigo-500/60" : ""}`}
                     >
                       <td className="px-4 py-3 font-medium text-white">
                         {index + 1}
@@ -1618,19 +1796,14 @@ export default function App() {
                             </span>
                             {entry.status === "Accepted" && (
                               <div
-                                className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 shrink-0 ${entry.isRegisteteal ? "bg-teal-500" : "bg-teal-500"}`}
-                                title={
-                                  entry.isRegisteteal
-                                    ? "Registeteal"
-                                    : "Not Registeteal"
-                                }
+                                className={`h-2.5 w-2.5 rounded-full ring-1 ring-white/50 shrink-0 ${entry.isRegistered ?? entry.isRegisteteal ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.55)]" : "bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.55)]"}`}
+                                title={entry.isRegistered ?? entry.isRegisteteal ? "Registered" : "Not registered"}
                               />
                             )}
                           </div>
                           {entry.status === "Accepted" &&
-                            entry.isRegisteteal &&
-                            (entry.presentationDate ||
-                              entry.presentationTime) && (
+                            (entry.isRegistered ?? entry.isRegisteteal) &&
+                            (entry.presentationDate || entry.presentationTime) && (
                               <div className="text-[10px] text-gray-400 pl-1 whitespace-nowrap overflow-hidden text-ellipsis w-full">
                                 {entry.presentationDate && (
                                   <span>{entry.presentationDate}</span>

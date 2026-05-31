@@ -1,9 +1,56 @@
 @import "tailwindcss";
 
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    font-family: "Aptos", "Segoe UI", "Helvetica Neue", sans-serif;
+    background:
+      radial-gradient(circle at top, rgba(45, 212, 191, 0.16), transparent 34%),
+      linear-gradient(180deg, #07121d 0%, #051019 100%);
+    color: #f8fafc;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: rgba(45, 212, 191, 0.35);
+    color: #ffffff;
+  }
+}
+
 @layer utilities {
   .animate-bg {
     background-size: 400% 400%;
     animation: gradientBG 10s ease infinite;
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.55) rgba(15, 23, 42, 0.35);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.35);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgba(148, 163, 184, 0.55);
   }
 }
 
