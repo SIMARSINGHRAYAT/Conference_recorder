@@ -180,10 +180,10 @@ export default function App() {
     durationMinutes: "",
   });
 
-  const [currentUser, setCurrentUser] = useState<string>("SIMAR");
-  const [usernameInput, setUsernameInput] = useState<string>("SIMAR");
+  const [currentUser, setCurrentUser] = useState<string>("");
+  const [usernameInput, setUsernameInput] = useState<string>("");
   const [assignUsernameInput, setAssignUsernameInput] = useState<string>("");
-  const [isDataLoaded, setIsDataLoaded] = useState(true);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
     // Initialize SIMAR data on first load if it doesn't exist
@@ -415,7 +415,6 @@ export default function App() {
       localStorage.setItem("app_notifications_SIMAR", JSON.stringify([]));
       localStorage.setItem("collection_links_SIMAR", JSON.stringify([]));
     }
-    handleStart();
   }, []);
 
   useEffect(() => {
@@ -549,7 +548,11 @@ export default function App() {
   };
 
   const handleStart = () => {
-    const active = usernameInput.trim() || "SIMAR";
+    const active = usernameInput.trim();
+    if (!active) {
+      toast.error("Please enter a username to continue.");
+      return;
+    }
     setCurrentUser(active);
     const suffix = `_${active}`;
 
@@ -1800,7 +1803,7 @@ export default function App() {
               <X size={20} />
             </button>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-fuchsia-200">
-              Edit User
+              Change User
             </p>
             <h3 className="mt-2 text-xl font-semibold text-white">
               Update account details
@@ -1993,13 +1996,13 @@ export default function App() {
               <div className="flex flex-col items-end text-sm">
                 <span className="text-gray-400">Logged in as</span>
                 <span className="font-semibold text-teal-300 px-3 py-1 bg-teal-900/30 rounded-full border border-teal-500/30 mt-1">
-                  {currentUser === "SIMAR" ? "Public User" : currentUser}
+                  {currentUser}
                 </span>
                 <button
                   onClick={openUserEditor}
                   className="text-xs text-teal-400 hover:text-teal-300 mt-2"
                 >
-                  Edit User
+                  Change User
                 </button>
               </div>
             ) : (
@@ -2030,7 +2033,7 @@ export default function App() {
                   onClick={openUserEditor}
                   className="text-xs text-teal-400 hover:text-teal-300 mt-3"
                 >
-                  Edit User
+                  Change User
                 </button>
               </div>
             )}
