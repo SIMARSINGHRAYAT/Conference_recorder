@@ -59,10 +59,10 @@
   }
 
   body::before {
-    background-image: url("/neon-background.svg");
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-size: cover;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(0, 191, 255, 0.16), transparent 18%),
+      radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.14), transparent 20%),
+      radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.12), transparent 22%);
     opacity: 1;
   }
 
