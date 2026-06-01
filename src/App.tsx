@@ -462,8 +462,8 @@ export default function App() {
     "scholar_links",
   ];
 
-  const readUserStorage = <T,>(base: string, fallback: T): T => {
-    const saved = localStorage.getItem(getUserKey(base));
+  const readExactStorage = <T,>(storageKey: string, fallback: T): T => {
+    const saved = localStorage.getItem(storageKey);
     if (!saved) return fallback;
     try {
       return JSON.parse(saved) as T;
@@ -484,30 +484,46 @@ export default function App() {
     setShowUserModal(true);
   };
 
-  const renameCurrentUser = () => {
+  const changeCurrentUser = () => {
     const nextUser = userRenameInput.trim();
     if (!nextUser || nextUser === currentUser) return;
 
-    const oldUser = currentUser;
-    const snapshot = {
-      conference_entries: readUserStorage("conference_entries", entries),
-      future_conferences: readUserStorage("future_conferences", futureConfs),
-      app_notifications: readUserStorage("app_notifications", inAppNotifications),
-      collection_links: readUserStorage("collection_links", collectionLinks),
-      presentation_schedules: readUserStorage("presentation_schedules", presentationSchedules),
-      scholar_links: readUserStorage("scholar_links", scholarLinks),
-    };
+    const nextEntries = readExactStorage<ConferenceEntry[]>(
+      `conference_entries_${nextUser}`,
+      [],
+    ).map(normalizeConferenceEntry);
+    const nextFutureConfs = readExactStorage<FutureConference[]>(
+      `future_conferences_${nextUser}`,
+      [],
+    ).map(normalizeFutureConference);
+    const nextNotifications = readExactStorage<any[]>(
+      `app_notifications_${nextUser}`,
+      [],
+    );
+    const nextCollectionLinks = readExactStorage<ConferenceLink[]>(
+      `collection_links_${nextUser}`,
+      [],
+    ).map(normalizeConferenceLink);
+    const nextPresentationSchedules = readExactStorage<PresentationSchedule[]>(
+      `presentation_schedules_${nextUser}`,
+      [],
+    );
+    const nextScholarLinks = readExactStorage<ScholarLinks>(
+      `scholar_links_${nextUser}`,
+      emptyScholarLinks,
+    );
 
-    userStorageBases.forEach((base) => {
-      localStorage.setItem(`${base}_${nextUser}`, JSON.stringify((snapshot as any)[base]));
-      localStorage.removeItem(`${base}_${oldUser}`);
-    });
-
+    setEntries(nextEntries);
+    setFutureConfs(nextFutureConfs);
+    setInAppNotifications(nextNotifications);
+    setCollectionLinks(nextCollectionLinks);
+    setPresentationSchedules(nextPresentationSchedules);
+    setScholarLinks(nextScholarLinks);
     setCurrentUser(nextUser);
     setUsernameInput(nextUser);
     setUserRenameInput(nextUser);
     setShowUserModal(false);
-    toast.success(`Username updated to ${nextUser}`);
+    toast.success(`Changed active user to ${nextUser}`);
   };
 
   const deleteCurrentUser = () => {
@@ -1806,10 +1822,10 @@ export default function App() {
 
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
-                  onClick={renameCurrentUser}
+                  onClick={changeCurrentUser}
                   className="flex-1 rounded-md border border-fuchsia-500/60 bg-fuchsia-500/10 px-4 py-2 text-sm font-semibold text-fuchsia-200 transition hover:bg-fuchsia-500/20"
                 >
-                  Rename User
+                  Change User
                 </button>
                 <button
                   onClick={deleteCurrentUser}
@@ -1977,7 +1993,7 @@ export default function App() {
               <div className="flex flex-col items-end text-sm">
                 <span className="text-gray-400">Logged in as</span>
                 <span className="font-semibold text-teal-300 px-3 py-1 bg-teal-900/30 rounded-full border border-teal-500/30 mt-1">
-                  {currentUser}
+                  {currentUser === "SIMAR" ? "Public User" : currentUser}
                 </span>
                 <button
                   onClick={openUserEditor}
