@@ -80,7 +80,7 @@ type ScholarLinks = {
 const statuses = ["Accepted", "Presented", "Published"];
 const defaultCategories = ["IEEE", "Springers", "CRC"];
 
-type View = "welcome" | "dashboard" | "add-future";
+type View = "welcome" | "dashboard" | "add-future" | "github-signin";
 
 const normalizeConferenceEntry = (entry: any): ConferenceEntry => ({
   ...entry,
@@ -576,6 +576,42 @@ export default function App() {
 
     setIsDataLoaded(true);
     setCurrentView("dashboard");
+  };
+
+  const handleGithubAuth = () => {
+    toast.info("Redirecting to GitHub for authentication...");
+    
+    setTimeout(() => {
+      // Mocking a successful GitHub sign in
+      // TODO: Replace with real GitHub OAuth flow
+      const mockGithubUsername = "GitHubUser_" + Math.floor(Math.random() * 1000);
+      setUsernameInput(mockGithubUsername);
+      setCurrentUser(mockGithubUsername);
+      
+      const suffix = `_${mockGithubUsername}`;
+
+      const e = localStorage.getItem(`conference_entries${suffix}`);
+      setEntries(e ? JSON.parse(e).map(normalizeConferenceEntry) : []);
+
+      const f = localStorage.getItem(`future_conferences${suffix}`);
+      setFutureConfs(f ? JSON.parse(f) : []);
+
+      const n = localStorage.getItem(`app_notifications${suffix}`);
+      setInAppNotifications(n ? JSON.parse(n) : []);
+
+      const c = localStorage.getItem(`collection_links${suffix}`);
+      setCollectionLinks(c ? JSON.parse(c).map(normalizeConferenceLink) : []);
+
+      const p = localStorage.getItem(`presentation_schedules${suffix}`);
+      setPresentationSchedules(p ? JSON.parse(p) : []);
+
+      const s = localStorage.getItem(`scholar_links${suffix}`);
+      setScholarLinks(s ? JSON.parse(s) : emptyScholarLinks);
+
+      setIsDataLoaded(true);
+      setCurrentView("dashboard");
+      toast.success(`Successfully signed in as ${mockGithubUsername}`);
+    }, 1500);
   };
 
   const handleLoadSampleData = () => {
@@ -1229,33 +1265,47 @@ export default function App() {
     return (
       <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-black via-slate-950 to-black px-4 font-sans relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-        <div className="relative z-10 text-center space-y-6 bg-black/40 p-12 rounded-3xl backdrop-blur-md border border-teal-500/20 shadow-2xl">
-          <h1 className="text-5xl sm:text-7xl font-extrabold text-white tracking-wider">
-            Welcome to{" "}
-            <span className="text-teal-400 bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-teal-300">
-              Tracker
-            </span>
+        <div className="relative z-10 text-center space-y-6 bg-black/50 p-12 rounded-3xl backdrop-blur-xl border border-gray-700 shadow-2xl">
+          <h1 className="text-4xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-gray-300 to-gray-500 tracking-wider uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+            SCHOLARDECK
           </h1>
-          <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light">
-            Record your publications, manage presentations, and monitor your
-            scholar citations seamlessly through our professional dashboard.
+          <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light italic">
+            Your Research, Organized, Tracked and Published
           </p>
 
           <div className="mt-8 mx-auto max-w-sm space-y-4">
-            <input
-              type="text"
-              value={usernameInput}
-              onChange={(e) => setUsernameInput(e.target.value)}
-              placeholder="Enter Username"
-              className="w-full rounded-md border border-white/30 bg-black/50 px-4 py-3 text-center text-white outline-none transition focus:border-teal-400 text-lg placeholder:text-gray-500"
-            />
             <button
-              onClick={handleStart}
-              className="w-full rounded-full bg-teal-600 px-10 py-4 text-lg font-bold text-white shadow-[0_0_20px_rgba(20,184,166,0.4)] transition-all hover:scale-105 hover:bg-teal-500 cursor-pointer border border-teal-400 text-center uppercase tracking-widest"
+              onClick={() => setCurrentView("github-signin")}
+              className="w-full rounded-full bg-gradient-to-r from-gray-100 via-gray-300 to-gray-400 px-10 py-4 text-lg font-bold text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-105 hover:from-white hover:to-gray-200 cursor-pointer border border-gray-400 text-center uppercase tracking-widest"
             >
               Get Started
             </button>
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (currentView === "github-signin") {
+    return (
+      <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-black via-slate-950 to-black px-4 font-sans relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+        <div className="relative z-10 text-center space-y-8 bg-black/50 p-12 rounded-3xl backdrop-blur-xl border border-gray-700 shadow-2xl w-full max-w-md">
+          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-gray-300 to-gray-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+            Sign In
+          </h2>
+          <p className="text-gray-300 text-sm font-light italic">
+            Connect your GitHub account to access SCHOLARDECK.
+          </p>
+          <button
+            onClick={handleGithubAuth}
+            className="flex items-center justify-center w-full rounded-full bg-gradient-to-r from-gray-800 to-gray-900 px-8 py-4 text-lg font-bold text-gray-200 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:scale-105 hover:from-gray-700 hover:to-gray-800 cursor-pointer border border-gray-600 uppercase tracking-wider"
+          >
+            <svg height="24" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="24" className="mr-3 fill-current">
+              <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+            </svg>
+            Continue with GitHub
+          </button>
         </div>
       </main>
     );

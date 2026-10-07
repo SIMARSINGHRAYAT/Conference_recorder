@@ -30,10 +30,13 @@
   .conference-light {
     color: #f8fafc;
     background:
-      radial-gradient(circle at 15% 20%, rgba(0, 191, 255, 0.18), transparent 18%),
-      radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.18), transparent 20%),
-      radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.15), transparent 22%),
-      linear-gradient(180deg, #000000 0%, #020617 100%) !important;
+      radial-gradient(circle at 10% 20%, rgba(0, 191, 255, 0.18), transparent 20%),
+      radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.18), transparent 20%),
+      radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.18), transparent 25%),
+      radial-gradient(circle at 20% 85%, rgba(239, 68, 68, 0.15), transparent 20%),
+      radial-gradient(circle at 50% 50%, rgba(234, 179, 8, 0.12), transparent 30%),
+      radial-gradient(circle at 70% 30%, rgba(34, 197, 94, 0.15), transparent 20%),
+      linear-gradient(180deg, #000000 0%, #000000 100%) !important;
   }
 
   .conference-light input,
@@ -62,7 +65,8 @@
     background:
       radial-gradient(circle at 15% 20%, rgba(0, 191, 255, 0.16), transparent 18%),
       radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.14), transparent 20%),
-      radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.12), transparent 22%);
+      radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.12), transparent 22%),
+      radial-gradient(circle at 30% 70%, rgba(249, 115, 22, 0.12), transparent 22%);
     opacity: 1;
   }
 
