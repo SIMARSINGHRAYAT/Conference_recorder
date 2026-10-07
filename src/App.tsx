@@ -1289,19 +1289,19 @@ export default function App() {
   if (currentView === "welcome") {
     return (
       <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-black via-slate-950 to-black px-4 font-sans relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-        <div className="relative z-10 text-center space-y-6 bg-black/50 p-12 rounded-3xl backdrop-blur-xl border border-gray-700 shadow-2xl">
-          <h1 className="text-4xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-gray-300 to-gray-500 tracking-wider uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+        <div className="absolute inset-0 grid-overlay opacity-30 mix-blend-overlay"></div>
+        <div className="relative z-10 text-center space-y-8 w-full max-w-5xl mx-auto flex flex-col items-center">
+          <h1 className="text-6xl sm:text-8xl md:text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-gray-300 to-gray-500 tracking-wider uppercase drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
             SCHOLARDECK
           </h1>
-          <p className="text-gray-300 text-lg sm:text-xl max-w-lg mx-auto leading-relaxed font-light italic">
+          <p className="text-gray-300 text-xl sm:text-2xl md:text-3xl max-w-3xl mx-auto leading-relaxed font-light italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             Your Research, Organized, Tracked and Published
           </p>
 
-          <div className="mt-8 mx-auto max-w-sm space-y-4">
+          <div className="mt-12 mx-auto max-w-sm space-y-4 w-full">
             <button
               onClick={() => setCurrentView("github-signin")}
-              className="w-full rounded-full bg-gradient-to-r from-gray-100 via-gray-300 to-gray-400 px-10 py-4 text-lg font-bold text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all hover:scale-105 hover:from-white hover:to-gray-200 cursor-pointer border border-gray-400 text-center uppercase tracking-widest"
+              className="w-full rounded-full bg-black/40 backdrop-blur-md px-10 py-5 text-xl font-bold text-gray-100 shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all hover:scale-105 hover:bg-black/60 hover:text-white hover:border-gray-300 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] cursor-pointer border-2 border-gray-500 text-center uppercase tracking-widest"
             >
               Get Started
             </button>
@@ -1314,23 +1314,25 @@ export default function App() {
   if (currentView === "github-signin") {
     return (
       <main className="conference-light animate-bg flex min-h-screen items-center justify-center bg-gradient-to-br from-black via-slate-950 to-black px-4 font-sans relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-        <div className="relative z-10 text-center space-y-8 bg-black/50 p-12 rounded-3xl backdrop-blur-xl border border-gray-700 shadow-2xl w-full max-w-md">
-          <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-gray-300 to-gray-500 uppercase tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+        <div className="absolute inset-0 grid-overlay opacity-30 mix-blend-overlay"></div>
+        <div className="relative z-10 text-center space-y-8 w-full max-w-3xl mx-auto flex flex-col items-center">
+          <h2 className="text-5xl sm:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-100 via-gray-300 to-gray-500 uppercase tracking-widest drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
             Sign In
           </h2>
-          <p className="text-gray-300 text-sm font-light italic">
+          <p className="text-gray-300 text-xl font-light italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             Connect your GitHub account to access SCHOLARDECK.
           </p>
-          <button
-            onClick={handleGithubAuth}
-            className="flex items-center justify-center w-full rounded-full bg-gradient-to-r from-gray-800 to-gray-900 px-8 py-4 text-lg font-bold text-gray-200 shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all hover:scale-105 hover:from-gray-700 hover:to-gray-800 cursor-pointer border border-gray-600 uppercase tracking-wider"
-          >
-            <svg height="24" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="24" className="mr-3 fill-current">
-              <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-            </svg>
-            Continue with GitHub
-          </button>
+          <div className="w-full max-w-md mx-auto mt-12">
+            <button
+              onClick={handleGithubAuth}
+              className="flex items-center justify-center w-full rounded-full bg-black/40 backdrop-blur-md px-8 py-5 text-xl font-bold text-gray-100 shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-all hover:scale-105 hover:bg-black/60 hover:text-white hover:border-gray-300 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] cursor-pointer border-2 border-gray-500 uppercase tracking-wider"
+            >
+              <svg height="28" aria-hidden="true" viewBox="0 0 16 16" version="1.1" width="28" className="mr-4 fill-current">
+                <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+              </svg>
+              Continue with GitHub
+            </button>
+          </div>
         </div>
       </main>
     );
