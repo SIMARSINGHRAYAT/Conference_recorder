@@ -186,6 +186,62 @@ export default function App() {
   const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    
+    if (code) {
+      toast.info("Authenticating with GitHub...");
+      fetch(`/api/github-auth?code=${code}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            toast.error("GitHub auth failed: " + data.error);
+            window.history.replaceState({}, document.title, "/");
+            return;
+          }
+          
+          if (data.username) {
+            const githubUsername = data.username;
+            setUsernameInput(githubUsername);
+            setCurrentUser(githubUsername);
+            
+            const suffix = `_${githubUsername}`;
+
+            const e = localStorage.getItem(`conference_entries${suffix}`);
+            setEntries(e ? JSON.parse(e).map(normalizeConferenceEntry) : []);
+
+            const f = localStorage.getItem(`future_conferences${suffix}`);
+            setFutureConfs(f ? JSON.parse(f) : []);
+
+            const n = localStorage.getItem(`app_notifications${suffix}`);
+            setInAppNotifications(n ? JSON.parse(n) : []);
+
+            const c = localStorage.getItem(`collection_links${suffix}`);
+            setCollectionLinks(c ? JSON.parse(c).map(normalizeConferenceLink) : []);
+
+            const p = localStorage.getItem(`presentation_schedules${suffix}`);
+            setPresentationSchedules(p ? JSON.parse(p) : []);
+
+            const s = localStorage.getItem(`scholar_links${suffix}`);
+            setScholarLinks(s ? JSON.parse(s) : emptyScholarLinks);
+
+            setIsDataLoaded(true);
+            setCurrentView("dashboard");
+            toast.success(`Successfully signed in as ${githubUsername}`);
+            
+            // Clean up the URL
+            window.history.replaceState({}, document.title, "/");
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("An error occurred during authentication.");
+          window.history.replaceState({}, document.title, "/");
+        });
+    }
+  }, []);
+
+  useEffect(() => {
     // Initialize SIMAR data on first load if it doesn't exist
     if (!localStorage.getItem("conference_entries_SIMAR")) {
       const initialData = [
@@ -580,38 +636,7 @@ export default function App() {
 
   const handleGithubAuth = () => {
     toast.info("Redirecting to GitHub for authentication...");
-    
-    setTimeout(() => {
-      // Mocking a successful GitHub sign in
-      // TODO: Replace with real GitHub OAuth flow
-      const mockGithubUsername = "GitHubUser_" + Math.floor(Math.random() * 1000);
-      setUsernameInput(mockGithubUsername);
-      setCurrentUser(mockGithubUsername);
-      
-      const suffix = `_${mockGithubUsername}`;
-
-      const e = localStorage.getItem(`conference_entries${suffix}`);
-      setEntries(e ? JSON.parse(e).map(normalizeConferenceEntry) : []);
-
-      const f = localStorage.getItem(`future_conferences${suffix}`);
-      setFutureConfs(f ? JSON.parse(f) : []);
-
-      const n = localStorage.getItem(`app_notifications${suffix}`);
-      setInAppNotifications(n ? JSON.parse(n) : []);
-
-      const c = localStorage.getItem(`collection_links${suffix}`);
-      setCollectionLinks(c ? JSON.parse(c).map(normalizeConferenceLink) : []);
-
-      const p = localStorage.getItem(`presentation_schedules${suffix}`);
-      setPresentationSchedules(p ? JSON.parse(p) : []);
-
-      const s = localStorage.getItem(`scholar_links${suffix}`);
-      setScholarLinks(s ? JSON.parse(s) : emptyScholarLinks);
-
-      setIsDataLoaded(true);
-      setCurrentView("dashboard");
-      toast.success(`Successfully signed in as ${mockGithubUsername}`);
-    }, 1500);
+    window.location.href = "/api/github-login";
   };
 
   const handleLoadSampleData = () => {
